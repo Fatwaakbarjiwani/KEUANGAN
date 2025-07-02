@@ -28,17 +28,28 @@
                 <form @submit.prevent="fetchNeracaSaldo" class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <!-- Periode ID -->
                     <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-3">Periode ID</label>
-                        <input type="number" min="1" x-model="form.periode_id"
+                        <label class="block text-sm font-medium text-slate-600 mb-3">Periode</label>
+                        <select x-model="form.periode_id"
                             class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-3"
-                            placeholder="Masukkan ID Periode" required>
+                            required>
+                            <option value="">Pilih Periode</option>
+                            <template x-for="p in periodeList" :key="p.id">
+                                <option :value="p.id"
+                                    x-text="p.nama + ' (' + p.tanggal_mulai + ' s/d ' + p.tanggal_selesai + ')' "></option>
+                            </template>
+                        </select>
                     </div>
                     <!-- Level -->
                     <div>
                         <label class="block text-sm font-medium text-slate-600 mb-3">Level</label>
-                        <input type="number" min="1" x-model="form.level"
+                        <select x-model="form.level"
                             class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-3"
-                            placeholder="Level" required>
+                            required>
+                            <option value="">Semua Level</option>
+                            <template x-for="level in levelList" :key="level">
+                                <option :value="level" x-text="level"></option>
+                            </template>
+                        </select>
                     </div>
                 </form>
                 <div class="flex gap-2 mt-6">
@@ -156,10 +167,13 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200">
                             <template x-if="dataLoaded && neracaSaldoData && neracaSaldoData.length > 0">
-                                <template x-for="row in neracaSaldoData" :key="row.account_code">
+                                <template x-for="row in flattenNeracaSaldo(neracaSaldoData)" :key="row.id">
                                     <tr>
                                         <td class="px-6 py-4 text-sm text-slate-600" x-text="row.account_code"></td>
-                                        <td class="px-6 py-4 text-sm text-slate-600" x-text="row.account_name"></td>
+                                        <td class="px-6 py-4 text-sm text-slate-600">
+                                            <span :style="`padding-left: ${row.indent}px`"
+                                                x-text="row.account_name"></span>
+                                        </td>
                                         <td class="px-6 py-4 text-right text-sm text-slate-600"
                                             x-text="formatRupiah(row.saldo_awal)"></td>
                                         <td class="px-6 py-4 text-right text-sm text-green-600"
@@ -182,13 +196,17 @@
                             <tr class="bg-slate-100 font-bold">
                                 <td colspan="2" class="px-6 py-4 text-sm text-slate-800">TOTAL</td>
                                 <td class="px-6 py-4 text-right text-sm text-slate-800"
-                                    x-text="formatRupiah(totalSaldoAwal)"></td>
-                                <td class="px-6 py-4 text-right text-sm text-slate-800" x-text="formatRupiah(totalDebet)">
+                                    x-text="formatRupiah(flattenNeracaSaldo(neracaSaldoData).filter(r => !r.children || r.children.length === 0).reduce((sum, r) => sum + Number(r.saldo_awal), 0))">
                                 </td>
                                 <td class="px-6 py-4 text-right text-sm text-slate-800"
-                                    x-text="formatRupiah(totalKredit)"></td>
+                                    x-text="formatRupiah(flattenNeracaSaldo(neracaSaldoData).filter(r => !r.children || r.children.length === 0).reduce((sum, r) => sum + Number(r.total_debit), 0))">
+                                </td>
                                 <td class="px-6 py-4 text-right text-sm text-slate-800"
-                                    x-text="formatRupiah(totalSaldoAkhir)"></td>
+                                    x-text="formatRupiah(flattenNeracaSaldo(neracaSaldoData).filter(r => !r.children || r.children.length === 0).reduce((sum, r) => sum + Number(r.total_kredit), 0))">
+                                </td>
+                                <td class="px-6 py-4 text-right text-sm text-slate-800"
+                                    x-text="formatRupiah(flattenNeracaSaldo(neracaSaldoData).filter(r => !r.children || r.children.length === 0).reduce((sum, r) => sum + Number(r.saldo_akhir), 0))">
+                                </td>
                             </tr>
                         </tfoot>
                     </table>
@@ -201,7 +219,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script>
         window.API_BASE_URL = "{{ env('API_BASE_URL', 'http://localhost/api') }}";
-        window.API_TOKEN = "{{ session('token') }}";
+        window.API_TOKEN = localStorage.getItem('token');
 
         function neracaSaldoApp() {
             return {
@@ -209,6 +227,8 @@
                     periode_id: '',
                     level: ''
                 },
+                periodeList: [],
+                levelList: [1, 2, 3], // Sekarang hanya level 1-3
                 neracaSaldoData: [],
                 dataLoaded: false,
                 totalDebet: 0,
@@ -217,6 +237,23 @@
                 totalSaldoAkhir: 0,
                 statusBalance: '-',
                 statusBalanceDesc: '',
+                init() {
+                    this.fetchPeriodeList();
+                },
+                fetchPeriodeList() {
+                    const token = window.API_TOKEN || '';
+                    const apiBaseUrl = window.API_BASE_URL;
+                    fetch(`${apiBaseUrl}/api/periode`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/json',
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            this.periodeList = data.data || data;
+                        });
+                },
                 fetchNeracaSaldo() {
                     if (!this.form.periode_id || !this.form.level) return;
                     const token = window.API_TOKEN || '';
@@ -254,14 +291,34 @@
                         kredit = 0,
                         saldoAwal = 0,
                         saldoAkhir = 0;
-                    if (this.neracaSaldoData && this.neracaSaldoData.length > 0) {
+
+                    // Jika filter level 3, data sudah flat, cukup jumlahkan saja
+                    if (this.form.level == 3 && this.neracaSaldoData && this.neracaSaldoData.length > 0) {
                         this.neracaSaldoData.forEach(row => {
                             debet += Number(row.total_debit);
                             kredit += Number(row.total_kredit);
                             saldoAwal += Number(row.saldo_awal);
                             saldoAkhir += Number(row.saldo_akhir);
                         });
+                    } else {
+                        // Rekursif untuk data bertingkat
+                        function sumLevel3(arr) {
+                            arr.forEach(row => {
+                                if (!row.children || row.children.length === 0) {
+                                    debet += Number(row.total_debit);
+                                    kredit += Number(row.total_kredit);
+                                    saldoAwal += Number(row.saldo_awal);
+                                    saldoAkhir += Number(row.saldo_akhir);
+                                } else if (row.children && row.children.length > 0) {
+                                    sumLevel3(row.children);
+                                }
+                            });
+                        }
+                        if (this.neracaSaldoData && this.neracaSaldoData.length > 0) {
+                            sumLevel3(this.neracaSaldoData);
+                        }
                     }
+
                     this.totalDebet = debet;
                     this.totalKredit = kredit;
                     this.totalSaldoAwal = saldoAwal;
@@ -351,6 +408,19 @@
                     });
 
                     doc.save('neraca-saldo.pdf');
+                },
+                flattenNeracaSaldo(data, level = 1) {
+                    let rows = [];
+                    data.forEach(item => {
+                        rows.push({
+                            ...item,
+                            indent: (item.level - 1) * 24 // 24px per level
+                        });
+                        if (item.children && item.children.length > 0) {
+                            rows = rows.concat(this.flattenNeracaSaldo(item.children, level + 1));
+                        }
+                    });
+                    return rows;
                 }
             }
         }

@@ -20,85 +20,8 @@
             </div>
 
             <!-- Info Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-medium text-slate-600">Periode Aktif</p>
-                            @php $aktif = collect($periode)->firstWhere('status', 'aktif'); @endphp
-                            <p class="text-lg font-bold text-slate-700 mt-1">{{ $aktif['nama'] ?? '-' }}</p>
-                            <p class="text-xs text-green-600 mt-1">
-                                @if ($aktif)
-                                    {{ $aktif['tanggal_mulai'] }} s/d {{ $aktif['tanggal_selesai'] }}
-                                @else
-                                    Tidak ada periode aktif
-                                @endif
-                            </p>
-                        </div>
-                        <div class="bg-green-100 rounded-full p-2 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-medium text-slate-600">Total Periode</p>
-                            <p class="text-lg font-bold text-slate-700 mt-1">{{ count($periode) }}</p>
-                            <p class="text-xs text-blue-600 mt-1">Periode tersedia</p>
-                        </div>
-                        <div class="bg-blue-100 rounded-full p-2 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
-                                </path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-medium text-slate-600">Periode Tertutup</p>
-                            @php $tertutup = collect($periode)->where('status', 'tutup')->count(); @endphp
-                            <p class="text-lg font-bold text-slate-700 mt-1">{{ $tertutup }}</p>
-                            <p class="text-xs text-slate-600 mt-1">Periode selesai</p>
-                        </div>
-                        <div class="bg-slate-100 rounded-full p-2 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-medium text-slate-600">Status Sistem</p>
-                            <p class="text-lg font-bold {{ $aktif ? 'text-green-600' : 'text-slate-600' }} mt-1">
-                                {{ $aktif ? 'Aktif' : 'Tutup' }}
-                            </p>
-                            <p class="text-xs {{ $aktif ? 'text-green-500' : 'text-slate-500' }} mt-1">
-                                {{ $aktif ? '✓ Sistem berjalan normal' : 'Sistem tidak aktif' }}
-                            </p>
-                        </div>
-                        <div
-                            class="{{ $aktif ? 'bg-green-100' : 'bg-slate-100' }} rounded-full p-2 flex items-center justify-center">
-                            <svg class="w-6 h-6 {{ $aktif ? 'text-green-600' : 'text-slate-600' }}" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" id="infoCards">
+                <!-- Info cards akan diisi oleh JavaScript -->
             </div>
 
             <!-- Form Tambah Periode Baru -->
@@ -110,9 +33,7 @@
                     </svg>
                     Tambah Periode Baru
                 </h3>
-                <form method="POST" action="{{ route('periode.store') }}"
-                    class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    @csrf
+                <form id="formTambahPeriode" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
                         <label class="block text-slate-600 mb-1 text-sm font-medium">Nama Periode</label>
                         <input type="text" name="nama" placeholder="Contoh: 2024" required
@@ -197,43 +118,8 @@
                                     Aksi</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-slate-200">
-                            @forelse($periode as $i => $row)
-                                <tr class="hover:bg-slate-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ $i + 1 }}
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-slate-700">{{ $row['nama'] }}</td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">{{ $row['tanggal_mulai'] }}</td>
-                                    <td class="px-6 py-4 text-sm text-slate-600">{{ $row['tanggal_selesai'] }}</td>
-                                    <td class="px-6 py-4 text-center">
-                                        <span
-                                            class="inline-flex px-2 py-1 text-xs rounded-full
-                                            @if ($row['status'] == 'aktif') bg-green-100 text-green-800
-                                            @else bg-slate-100 text-slate-700 @endif">
-                                            {{ ucfirst($row['status']) }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-center">
-                                        <div class="flex justify-center space-x-2">
-                                            <button type="button"
-                                                class="bg-amber-400 hover:bg-amber-500 text-white py-1 px-3 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-amber-200 btn-edit-periode"
-                                                data-id="{{ $row['id'] }}" title="Edit Periode">
-                                                <img src="/images/iconEdit.svg" alt="">
-                                            </button>
-                                            <button type="button"
-                                                class="bg-rose-400 hover:bg-rose-500 text-white py-1 px-3 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-rose-200 btn-delete-periode"
-                                                title="Hapus Periode" data-id="{{ $row['id'] }}">
-                                                <img src="/images/iconSampah.svg" alt="">
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="px-6 py-4 text-center text-slate-400">Data tidak ditemukan.
-                                    </td>
-                                </tr>
-                            @endforelse
+                        <tbody id="periodeTableBody" class="bg-white divide-y divide-slate-200">
+                            <!-- Data periode akan diisi oleh JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -273,33 +159,33 @@
             </button>
             <h3 class="text-lg font-semibold text-slate-700 mb-4">Edit Periode</h3>
             <form id="formEditPeriode" class="grid grid-cols-1 gap-4">
-                <input type="hidden" name="id" id="edit_id">
+                <input type="hidden" id="edit_id" name="id">
                 <div>
                     <label class="block text-slate-600 mb-1 text-sm font-medium">Nama Periode</label>
-                    <input type="text" name="nama" id="edit_nama" required
-                        class="w-full border border-slate-200 rounded-lg focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3" />
+                    <input type="text" id="edit_nama" name="nama" required
+                        class="w-full border border-slate-200 rounded-lg text-sm py-2 px-3" />
                 </div>
                 <div>
                     <label class="block text-slate-600 mb-1 text-sm font-medium">Tanggal Mulai</label>
-                    <input type="date" name="tanggal_mulai" id="edit_tanggal_mulai" required
-                        class="w-full border border-slate-200 rounded-lg focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3" />
+                    <input type="date" id="edit_tanggal_mulai" name="tanggal_mulai" required
+                        class="w-full border border-slate-200 rounded-lg text-sm py-2 px-3" />
                 </div>
                 <div>
                     <label class="block text-slate-600 mb-1 text-sm font-medium">Tanggal Selesai</label>
-                    <input type="date" name="tanggal_selesai" id="edit_tanggal_selesai" required
-                        class="w-full border border-slate-200 rounded-lg focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3" />
+                    <input type="date" id="edit_tanggal_selesai" name="tanggal_selesai" required
+                        class="w-full border border-slate-200 rounded-lg text-sm py-2 px-3" />
                 </div>
                 <div>
                     <label class="block text-slate-600 mb-1 text-sm font-medium">Status</label>
-                    <select name="status" id="edit_status" required
-                        class="w-full border border-slate-200 rounded-lg focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3">
+                    <select id="edit_status" name="status" required
+                        class="w-full border border-slate-200 rounded-lg text-sm py-2 px-3">
                         <option value="Aktif">Aktif</option>
                         <option value="Tutup">Tutup</option>
                     </select>
                 </div>
                 <div>
                     <button type="submit"
-                        class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-200 mt-2">Simpan
+                        class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg mt-2">Simpan
                         Perubahan</button>
                 </div>
             </form>
@@ -307,7 +193,237 @@
     </div>
     <script>
         const apiBaseUrl = @json($apiBaseUrl);
-        const token = @json(session('token'));
+        const token = localStorage.getItem('token');
+
+        // Render info cards
+        function renderInfoCards(periode) {
+            const aktif = periode.find(p => p.status.toLowerCase() === 'aktif');
+            const tertutup = periode.filter(p => p.status.toLowerCase() === 'tutup').length;
+            const total = periode.length;
+            document.getElementById('infoCards').innerHTML = `
+                <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-600">Periode Aktif</p>
+                            <p class="text-lg font-bold text-slate-700 mt-1">${aktif ? aktif.nama : '-'}</p>
+                            <p class="text-xs text-green-600 mt-1">
+                                ${aktif ? aktif.tanggal_mulai + ' s/d ' + aktif.tanggal_selesai : 'Tidak ada periode aktif'}
+                            </p>
+                        </div>
+                        <div class="bg-green-100 rounded-full p-2 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-600">Total Periode</p>
+                            <p class="text-lg font-bold text-slate-700 mt-1">${total}</p>
+                            <p class="text-xs text-blue-600 mt-1">Periode tersedia</p>
+                        </div>
+                        <div class="bg-blue-100 rounded-full p-2 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-600">Periode Tertutup</p>
+                            <p class="text-lg font-bold text-slate-700 mt-1">${tertutup}</p>
+                            <p class="text-xs text-slate-600 mt-1">Periode selesai</p>
+                        </div>
+                        <div class="bg-slate-100 rounded-full p-2 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow border border-slate-200 p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-600">Status Sistem</p>
+                            <p class="text-lg font-bold ${aktif ? 'text-green-600' : 'text-slate-600'} mt-1">
+                                ${aktif ? 'Aktif' : 'Tutup'}
+                            </p>
+                            <p class="text-xs ${aktif ? 'text-green-500' : 'text-slate-500'} mt-1">
+                                ${aktif ? '✓ Sistem berjalan normal' : 'Sistem tidak aktif'}
+                            </p>
+                        </div>
+                        <div class="${aktif ? 'bg-green-100' : 'bg-slate-100'} rounded-full p-2 flex items-center justify-center">
+                            <svg class="w-6 h-6 ${aktif ? 'text-green-600' : 'text-slate-600'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render tabel periode
+        function renderPeriodeTable(periode) {
+            const tbody = document.getElementById('periodeTableBody');
+            tbody.innerHTML = '';
+            if (!periode || periode.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="6" class="text-center text-slate-400 py-4">Data tidak ditemukan.</td></tr>`;
+                return;
+            }
+            periode.forEach((row, i) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">${i + 1}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${row.nama}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${row.tanggal_mulai}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${row.tanggal_selesai}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="inline-flex px-2 py-1 text-xs rounded-full ${row.status.toLowerCase() === 'aktif' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}">${row.status}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <button class="btn-edit-periode bg-amber-400 hover:bg-amber-500 text-white py-1 px-3 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-amber-200" data-id="${row.id}">
+                        <img src="images/iconEdit.svg" class="min-w-4 min-h-4 w-5" alt="">
+                                </button>
+                            <button class="btn-delete-periode bg-rose-400 hover:bg-rose-500 text-white py-1 px-3 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-rose-200" data-id="${row.id}">
+                        <img src="images/iconSampah.svg" class="min-w-4 min-h-4 w-5" alt="">
+                                </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Ambil data periode dan render
+        function fetchAndRenderPeriode() {
+            fetch(`${apiBaseUrl}/api/periode`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    const periode = data.data || data;
+                    renderInfoCards(periode);
+                    renderPeriodeTable(periode);
+                });
+        }
+
+        // Form tambah periode
+        document.getElementById('formTambahPeriode').onsubmit = function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const body = {
+                nama: form.nama.value,
+                tanggal_mulai: form.tanggal_mulai.value,
+                tanggal_selesai: form.tanggal_selesai.value,
+                status: form.status.value
+            };
+            fetch(`${apiBaseUrl}/api/periode`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log(data);
+                    
+                    // Jika response adalah objek data periode, anggap sukses
+                    const isSuccess = data.data.id;
+                    const message = data.message || (isSuccess ? 'Periode berhasil ditambahkan.' :
+                        'Gagal menambah periode');
+                    Swal.fire({
+                        icon: isSuccess ? 'success' : 'error',
+                        title: isSuccess ? 'Berhasil' : 'Gagal',
+                        text: message,
+                        confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
+                    }).then(() => {
+                        if (isSuccess) {
+                            form.reset();
+                            fetchAndRenderPeriode();
+                        }
+                    });
+                });
+        };
+
+        // Event delegation untuk edit dan hapus
+        document.getElementById('periodeTableBody').addEventListener('click', function(e) {
+            const btnEdit = e.target.closest('.btn-edit-periode');
+            const btnDelete = e.target.closest('.btn-delete-periode');
+            if (btnEdit) {
+                const id = btnEdit.getAttribute('data-id');
+                // Tampilkan modal
+                document.getElementById('modalEditPeriode').classList.remove('hidden');
+                // Fetch data periode by id
+                fetch(`${apiBaseUrl}/api/periode/${id}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        const d = data.data || data;
+                        // Isi form modal dengan data d
+                        document.getElementById('edit_id').value = d.id;
+                        document.getElementById('edit_nama').value = d.nama;
+                        document.getElementById('edit_tanggal_mulai').value = d.tanggal_mulai;
+                        document.getElementById('edit_tanggal_selesai').value = d.tanggal_selesai;
+                        document.getElementById('edit_status').value = d.status.charAt(0).toUpperCase() + d
+                            .status.slice(1);
+                    });
+            }
+            if (btnDelete) {
+                const id = btnDelete.getAttribute('data-id');
+                Swal.fire({
+                    title: 'Hapus Periode?',
+                    text: 'Data yang dihapus tidak dapat dikembalikan!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Ya, hapus!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(`${apiBaseUrl}/api/periode/${id}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                
+                                // Jika response adalah objek data periode, anggap sukses
+                                const isSuccess = data.message;
+                                const message = data.message || (isSuccess ?
+                                    'Periode berhasil dihapus.' : 'Gagal menghapus periode');
+                                Swal.fire({
+                                    icon: isSuccess ? 'success' : 'error',
+                                    title: isSuccess ? 'Berhasil' : 'Gagal',
+                                    text: message,
+                                    confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
+                                });
+                                if (isSuccess) fetchAndRenderPeriode();
+                            });
+                    }
+                });
+            }
+        });
+
+        // Inisialisasi data saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', fetchAndRenderPeriode);
+
+        document.getElementById('closeModalEdit').onclick = function() {
+            document.getElementById('modalEditPeriode').classList.add('hidden');
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
             // Open Edit Modal and fill data
             document.querySelectorAll('.btn-edit-periode').forEach(btn => {
@@ -351,7 +467,6 @@
             document.getElementById('modalEditPeriode').addEventListener('click', function(e) {
                 if (e.target === this) this.classList.add('hidden');
             });
-
             // Submit Edit
             document.getElementById('formEditPeriode').onsubmit = function(e) {
                 e.preventDefault();
@@ -370,92 +485,25 @@
                         },
                         body: JSON.stringify(body)
                     })
-                    .then(res => {
-                        const isSuccess = res.ok;
-                        return res.json().then(data => ({
-                            data,
-                            isSuccess
-                        }));
-                    })
-                    .then(({
-                        data,
-                        isSuccess
-                    }) => {
+                    .then(res => res.json())
+                    .then(data => {
+                        // Jika response adalah objek data periode, anggap sukses
+                        const isSuccess = data && typeof data === 'object' && data.id;
+                        const message = data.message || (isSuccess ? 'Periode berhasil diupdate.' :
+                            'Gagal mengupdate periode');
                         Swal.fire({
                             icon: isSuccess ? 'success' : 'error',
                             title: isSuccess ? 'Berhasil' : 'Gagal',
-                            text: data.message || (isSuccess ? 'Periode berhasil diupdate.' :
-                                'Gagal update periode'),
+                            text: message,
                             confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
                         }).then(() => {
-                            if (isSuccess) location.reload();
-                        });
-                    })
-                    .catch(() => {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: 'Terjadi kesalahan',
-                            confirmButtonColor: '#ef4444'
+                            if (isSuccess) {
+                                document.getElementById('modalEditPeriode').classList.add('hidden');
+                                fetchAndRenderPeriode();
+                            }
                         });
                     });
             };
-
-            // Delete Periode
-            document.querySelectorAll('.btn-delete-periode').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    Swal.fire({
-                        title: 'Hapus Periode?',
-                        text: 'Data yang dihapus tidak dapat dikembalikan!',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#ef4444',
-                        cancelButtonColor: '#6b7280',
-                        confirmButtonText: 'Ya, hapus!'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            fetch(`${apiBaseUrl}/api/periode/${id}`, {
-                                    method: 'DELETE',
-                                    headers: {
-                                        'Authorization': `Bearer ${token}`
-                                    }
-                                })
-                                .then(res => {
-                                    const isSuccess = res.ok;
-                                    return res.json().then(data => ({
-                                        data,
-                                        isSuccess
-                                    }));
-                                })
-                                .then(({
-                                    data,
-                                    isSuccess
-                                }) => {
-                                    Swal.fire({
-                                        icon: isSuccess ? 'success' : 'error',
-                                        title: isSuccess ? 'Berhasil' : 'Gagal',
-                                        text: data.message || (isSuccess ?
-                                            'Periode berhasil dihapus.' :
-                                            'Gagal menghapus periode'),
-                                        confirmButtonColor: isSuccess ?
-                                            '#2563eb' : '#ef4444'
-                                    }).then(() => {
-                                        if (isSuccess) location.reload();
-                                    });
-                                })
-                                .catch(() => {
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Gagal',
-                                        text: 'Terjadi kesalahan',
-                                        confirmButtonColor: '#ef4444'
-                                    });
-                                });
-                        }
-                    });
-                });
-            });
         });
     </script>
 @endsection

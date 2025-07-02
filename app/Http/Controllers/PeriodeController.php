@@ -10,10 +10,9 @@ class PeriodeController extends Controller
 {
     public function index()
     {
-        $token = session('token');
         $apiBaseUrl = env('API_BASE_URL', 'http://localhost/api/');
-        $response = Http::withToken($token)->get($apiBaseUrl.'/api/periode');
-        $periode = $response->ok() ? ($response->json('data') ?? []) : [];
+        $periode = [];
+        // Tidak perlu ambil token dari session, data diambil via JS di client
         return view('pages.settingPeriode', compact('periode', 'apiBaseUrl'));
     }
 

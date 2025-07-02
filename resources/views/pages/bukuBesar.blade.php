@@ -82,17 +82,30 @@
                     <form @submit.prevent="fetchBukuBesar" class="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <!-- Akun ID -->
                         <div>
-                            <label class="block text-sm font-medium text-slate-600 mb-3">Akun ID</label>
-                            <input type="number" min="1" x-model="form.akun_id"
+                            <label class="block text-sm font-medium text-slate-600 mb-3">Akun</label>
+                            <select x-model="form.akun_id" id="filterAkunId"
                                 class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-3"
-                                placeholder="Masukkan ID Akun" required>
+                                required>
+                                <option value="">Pilih Akun</option>
+                                <template x-for="a in coaList" :key="a.id">
+                                    <option :value="a.id" x-text="a.account_code + ' - ' + a.account_name">
+                                    </option>
+                                </template>
+                            </select>
                         </div>
                         <!-- Periode ID -->
                         <div>
-                            <label class="block text-sm font-medium text-slate-600 mb-3">Periode ID</label>
-                            <input type="number" min="1" x-model="form.periode_id"
+                            <label class="block text-sm font-medium text-slate-600 mb-3">Periode</label>
+                            <select x-model="form.periode_id" id="filterPeriodeId"
                                 class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-3"
-                                placeholder="Masukkan ID Periode" required>
+                                required>
+                                <option value="">Pilih Periode</option>
+                                <template x-for="p in periodeList" :key="p.id">
+                                    <option :value="p.id"
+                                        x-text="p.nama + ' (' + p.tanggal_mulai + ' s/d ' + p.tanggal_selesai + ')' ">
+                                    </option>
+                                </template>
+                            </select>
                         </div>
                         <!-- Start Date -->
                         <div>
@@ -210,8 +223,8 @@
 
     <!-- Alpine.js CDN -->
     <script>
-        window.API_BASE_URL = "{{ env('API_BASE_URL', 'http://localhost/api') }}";
-        window.API_TOKEN = "{{ session('token') }}";
+        window.apiBaseUrl = "{{ env('API_BASE_URL', 'http://localhost/api') }}";
+        const token = localStorage.getItem('token');
     </script>
     <script src="//unpkg.com/alpinejs" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -225,20 +238,18 @@
                     end_date: '',
                     periode_id: ''
                 },
+                coaList: [],
+                periodeList: [],
                 bukuBesarData: null,
                 dataLoaded: false,
                 loading: false,
                 fetchBukuBesar() {
                     if (!this.form.akun_id || !this.form.start_date || !this.form.end_date || !this.form.periode_id) return;
                     this.loading = true;
-
-                    const apiBaseUrl = window.API_BASE_URL;
-
-
                     fetch(
                             `${apiBaseUrl}/api/laporan/buku-besar?akun_id=${this.form.akun_id}&start_date=${this.form.start_date}&end_date=${this.form.end_date}&periode_id=${this.form.periode_id}`, {
                                 headers: {
-                                    'Authorization': `Bearer ${API_TOKEN}`,
+                                    'Authorization': `Bearer ${token}`,
                                     'Accept': 'application/json',
                                 }
                             }
@@ -294,12 +305,9 @@
                     y += 7;
                     doc.text(`Saldo Awal: Rp ${Number(this.bukuBesarData.saldo_awal).toLocaleString('id-ID')}`, 14, y);
                     y += 7;
-
                     // Table header
                     const headers = [
-                        [
-                            'Tanggal', 'No. Bukti', 'Keterangan', 'Debet', 'Kredit', 'Saldo'
-                        ]
+                        ['Tanggal', 'No. Bukti', 'Keterangan', 'Debet', 'Kredit', 'Saldo']
                     ];
                     // Table body
                     const body = (this.bukuBesarData.jurnals || []).map(j => [
@@ -310,8 +318,6 @@
                         'Rp ' + Number(j.kredit).toLocaleString('id-ID'),
                         'Rp ' + Number(j.saldo_berjalan).toLocaleString('id-ID')
                     ]);
-
-                    // Use autoTable for better formatting
                     if (body.length > 0) {
                         doc.autoTable({
                             head: headers,
@@ -330,10 +336,35 @@
                         doc.text('Belum ada data buku besar', 14, y);
                         y += 7;
                     }
-
                     doc.setFontSize(11);
                     doc.text(`Saldo Akhir: Rp ${Number(this.bukuBesarData.saldo_akhir).toLocaleString('id-ID')}`, 14, y);
                     doc.save('buku-besar.pdf');
+                },
+                fetchCoaList() {
+                    fetch(`${window.apiBaseUrl}/api/coa`, {
+                            headers: {
+                                Authorization: 'Bearer ' + localStorage.getItem('token')
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            this.coaList = Array.isArray(data) ? data : [];
+                        });
+                },
+                fetchPeriodeList() {
+                    fetch(`${window.apiBaseUrl}/api/periode`, {
+                            headers: {
+                                Authorization: 'Bearer ' + localStorage.getItem('token')
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            this.periodeList = data.data || data;
+                        });
+                },
+                init() {
+                    this.fetchCoaList();
+                    this.fetchPeriodeList();
                 }
             }
         }

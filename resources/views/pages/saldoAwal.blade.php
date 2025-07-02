@@ -30,46 +30,6 @@
                     $totalDebet = array_sum(array_column($saldoAwal, 'debet'));
                     $totalKredit = array_sum(array_column($saldoAwal, 'kredit'));
                 @endphp
-                <div class="flex gap-4 mt-2 md:mt-0">
-                    <!-- Total Debet Card -->
-                    <div class="flex flex-col items-center">
-                        <div
-                            class="relative bg-gradient-to-r from-green-400/90 to-green-600/90 rounded-xl shadow px-4 py-1 flex flex-col items-center min-w-[140px]">
-                            <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-white rounded-full shadow p-1">
-                                <svg class="w-7 h-7 text-green-500" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"
-                                        fill="none" />
-                                    <path d="M8 12l2 2l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round" />
-                                </svg>
-                            </div>
-                            <span class="text-xs text-white/80 font-semibold tracking-wide mt-5">Total Debet</span>
-                            <span class="text-white text-lg font-extrabold mt-1 drop-shadow flex items-center gap-1">
-                                Rp {{ number_format($totalDebet, 0, ',', '.') }}
-                            </span>
-                        </div>
-                    </div>
-                    <!-- Total Kredit Card -->
-                    <div class="flex flex-col items-center">
-                        <div
-                            class="relative bg-gradient-to-r from-rose-400/90 to-rose-600/90 rounded-xl shadow px-4 py-1 flex flex-col items-center min-w-[140px]">
-                            <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-white rounded-full shadow p-1">
-                                <svg class="w-7 h-7 text-rose-500" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"
-                                        fill="none" />
-                                    <path d="M16 12H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round" />
-                                </svg>
-                            </div>
-                            <span class="text-xs text-white/80 font-semibold tracking-wide mt-5">Total Kredit</span>
-                            <span class="text-white text-lg font-extrabold mt-1 drop-shadow flex items-center gap-1">
-                                Rp {{ number_format($totalKredit, 0, ',', '.') }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Table with Edit/Save Action -->
@@ -101,8 +61,9 @@
                     <div class="flex items-center gap-4">
                         <div class="flex items-center gap-2 text-sm text-slate-600">
                             <span class="font-medium">Total Akun:</span>
-                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">
-                                {{ count($saldoAwal) }}
+
+                            <span id="totalAkun" class="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium">
+                                0
                             </span>
                         </div>
                         <div class="flex items-center gap-2 text-sm text-slate-600">
@@ -116,12 +77,22 @@
 
                 <!-- Table -->
                 <div class="overflow-x-auto">
+                    <div class="my-4 px-6 flex items-center gap-4">
+                        <label for="selectPeriode" class="text-sm font-medium text-slate-600 mr-2">Pilih Periode:</label>
+                        <select id="selectPeriode" class="border border-sky-400 rounded-md py-2 px-3 bg-white text-sm">
+                            <option value="">-- Pilih Periode --</option>
+                        </select>
+                    </div>
+
                     <table class="min-w-full divide-y divide-slate-200">
                         <thead>
                             <tr class="bg-slate-50">
                                 <th scope="col"
                                     class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     No</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    ID Akun</th>
                                 <th scope="col"
                                     class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Kode</th>
@@ -139,110 +110,24 @@
                                     Aksi</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-slate-200">
-                            <template x-for="(row, i) in rows" :key="i">
-                                <tr class="hover:bg-slate-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600" x-text="i+1"></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500" x-text="row.code"></td>
-                                    <td class="px-6 py-4 text-sm text-slate-600" x-text="row.rekening"></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">
-                                        <template x-if="editIndex === i">
-                                            <input type="number" min="0" x-model="editDebet"
-                                                class="w-28 md:w-36 border border-green-200 rounded-full px-4 py-1 text-green-700 bg-green-50 text-sm shadow-sm focus:outline-none focus:border-green-400 text-center" />
-                                        </template>
-                                        <template x-if="editIndex !== i">
-                                            <span x-show="row.debet" class="text-sm font-medium text-green-600"
-                                                x-text="'Rp ' + Number(row.debet).toLocaleString('id-ID')"></span>
-                                            <span x-show="!row.debet" class="text-slate-400 text-sm">-</span>
-                                        </template>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">
-                                        <template x-if="editIndex === i">
-                                            <input type="number" min="0" x-model="editKredit"
-                                                class="w-28 md:w-36 border border-rose-200 rounded-full px-4 py-1 text-rose-700 bg-rose-50 text-sm shadow-sm focus:outline-none focus:border-rose-400 text-center" />
-                                        </template>
-                                        <template x-if="editIndex !== i">
-                                            <span x-show="row.kredit" class="text-sm font-medium text-rose-600"
-                                                x-text="'Rp ' + Number(row.kredit).toLocaleString('id-ID')"></span>
-                                            <span x-show="!row.kredit" class="text-slate-400 text-sm">-</span>
-                                        </template>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-center">
-                                        <button type="button" x-show="editIndex !== i" @click="startEdit(i)"
-                                            class="flex items-center justify-center mx-auto bg-amber-400 hover:bg-amber-500 text-white rounded-md p-1 shadow transition focus:outline-none focus:ring-2 focus:ring-amber-200"
-                                            title="Edit">
-                                            <img src="images/iconEdit.svg" class="w-5 h-5" alt="">
-                                        </button>
-                                        <button type="button" x-show="editIndex === i" @click="saveEdit(i)"
-                                            class="flex items-center justify-center mx-auto bg-green-500 hover:bg-green-600 text-white rounded-md p-1 shadow transition focus:outline-none focus:ring-2 focus:ring-green-200"
-                                            title="Simpan">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"
-                                                viewBox="0 0 24 24">
-                                                <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </template>
+                        <tbody id="saldoAwalTableBody" class="bg-white divide-y divide-slate-200">
+                            <!-- Data akan diisi oleh JavaScript -->
                         </tbody>
+                        <tfoot>
+                            <tr class="bg-slate-100 font-bold">
+                                <td colspan="4" class="px-6 py-4 text-sm text-slate-800 text-right">TOTAL</td>
+                                <td class="px-6 py-4 text-right text-green-700" id="tfootTotalDebet">Rp 0</td>
+                                <td class="px-6 py-4 text-right text-rose-700" id="tfootTotalKredit">Rp 0</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
                     </table>
-                </div>
-
-                <!-- Pagination -->
-                <div class="bg-white px-4 py-3 border-t border-slate-200 sm:px-6">
-                    <div class="flex items-center justify-between">
-                        <div class="flex-1 flex justify-between sm:hidden">
-                            <a href="#"
-                                class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50">
-                                Previous
-                            </a>
-                            <a href="#"
-                                class="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50">
-                                Next
-                            </a>
-                        </div>
-                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                            <div>
-                                <p class="text-sm text-slate-700">
-                                    Showing
-                                    <span class="font-medium">1</span>
-                                    to
-                                    <span class="font-medium">{{ count($saldoAwal) }}</span>
-                                    of
-                                    <span class="font-medium">{{ count($saldoAwal) }}</span>
-                                    results
-                                </p>
-                            </div>
-                            <div>
-                                <nav class="relative z-0 inline-flex rounded-md shadow -space-x-px"
-                                    aria-label="Pagination">
-                                    <a href="#"
-                                        class="relative inline-flex items-center px-2 py-2 rounded-l-lg border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
-                                        <span class="sr-only">Previous</span>
-                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                                            fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd"
-                                                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                    </a>
-                                    <a href="#" aria-current="page"
-                                        class="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                                        1
-                                    </a>
-                                    <a href="#"
-                                        class="relative inline-flex items-center px-2 py-2 rounded-r-lg border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50">
-                                        <span class="sr-only">Next</span>
-                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                                            fill="currentColor" aria-hidden="true">
-                                            <path fill-rule="evenodd"
-                                                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                                                clip-rule="evenodd" />
-                                        </svg>
-                                    </a>
-                                </nav>
-                            </div>
-                        </div>
+                    <div class="flex justify-end my-6 px-2">
+                        <button id="submitSaldoAwal"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                            Simpan Saldo Awal
+                        </button>
                     </div>
                 </div>
             </div>
@@ -251,4 +136,216 @@
 
     <!-- Alpine.js CDN -->
     <script src="//unpkg.com/alpinejs" defer></script>
+    <script>
+        window.apiBaseUrl = "{{ env('API_BASE_URL', 'http://localhost/api') }}";
+        const token = localStorage.getItem('token');
+
+        function renderCoaTable(coa, tbody) {
+            tbody.innerHTML = '';
+            let akunCount = 0;
+            if (!coa || coa.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="7" class="text-center text-slate-400 py-4">Data tidak ditemukan.</td></tr>`;
+                document.getElementById('totalAkun').textContent = 0;
+                return;
+            }
+            let no = 1;
+
+            function renderRow(row, level) {
+                akunCount++;
+                let html = `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">${no++}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-400">${row.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${row.account_code}</td>
+                        <td class="px-6 py-4 text-sm text-slate-600" style="padding-left: ${level * 24}px">
+                            ${level > 0 ? `<svg class='inline w-4 h-4 mr-1 text-sky-400 align-middle' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' stroke-linecap='round' stroke-linejoin='round'></path></svg>` : ''}
+                            ${row.account_name}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right"><input type="number" min="0" value="0" class="debet-input border rounded px-2 py-1 w-36 text-right" data-id="${row.id}"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right"><input type="number" min="0" value="0" class="kredit-input border rounded px-2 py-1 w-36 text-right" data-id="${row.id}"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">-</td>
+                    </tr>
+                `;
+                if (row.children && row.children.length > 0) {
+                    row.children.forEach(child => {
+                        html += renderRow(child, level + 1);
+                    });
+                }
+                return html;
+            }
+            coa.forEach(row => {
+                tbody.innerHTML += renderRow(row, 0);
+            });
+            document.getElementById('totalAkun').textContent = akunCount;
+        }
+
+        let selectedPeriodeId = null;
+
+        function fetchAndRenderPeriodeDropdown() {
+            fetch(`${window.apiBaseUrl}/api/periode`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    const periodeList = data.data || data;
+                    const select = document.getElementById('selectPeriode');
+                    select.innerHTML = '<option value="">-- Pilih Periode --</option>';
+                    periodeList.forEach(p => {
+                        select.innerHTML +=
+                            `<option value="${p.id}">${p.nama} (${p.tanggal_mulai} s/d ${p.tanggal_selesai})</option>`;
+                    });
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchAndRenderPeriodeDropdown();
+            fetch(`${apiBaseUrl}/api/coa`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    const coa = data.data || data;
+                    renderCoaTable(coa, document.getElementById('saldoAwalTableBody'));
+                });
+            document.getElementById('selectPeriode').addEventListener('change', function() {
+                selectedPeriodeId = this.value;
+                updateTotalDebetKredit();
+            });
+        });
+
+        function formatRupiah(num) {
+            return 'Rp ' + Number(num).toLocaleString('id-ID');
+        }
+
+        function getSaldoAwalItems() {
+            const debetInputs = document.querySelectorAll('.debet-input');
+            const kreditInputs = document.querySelectorAll('.kredit-input');
+            const items = [];
+            debetInputs.forEach(input => {
+                const jumlah = parseFloat(input.value) || 0;
+                if (jumlah > 0) {
+                    items.push({
+                        akun_id: input.dataset.id,
+                        jumlah,
+                        tipe_saldo: 'Debit'
+                    });
+                }
+            });
+            kreditInputs.forEach(input => {
+                const jumlah = parseFloat(input.value) || 0;
+                if (jumlah > 0) {
+                    items.push({
+                        akun_id: input.dataset.id,
+                        jumlah,
+                        tipe_saldo: 'Kredit'
+                    });
+                }
+            });
+            return items;
+        }
+
+        function updateTotalDebetKredit() {
+            let totalDebet = 0,
+                totalKredit = 0;
+            document.querySelectorAll('.debet-input').forEach(input => {
+                totalDebet += parseFloat(input.value) || 0;
+            });
+            document.querySelectorAll('.kredit-input').forEach(input => {
+                totalKredit += parseFloat(input.value) || 0;
+            });
+            // Update total di bawah tabel
+            document.getElementById('tfootTotalDebet').textContent = formatRupiah(totalDebet);
+            document.getElementById('tfootTotalKredit').textContent = formatRupiah(totalKredit);
+            // Validasi: tombol submit aktif hanya jika total debet = total kredit, periode dipilih, dan > 0
+            const canSubmit = totalDebet === totalKredit && totalDebet > 0 && selectedPeriodeId;
+            document.getElementById('submitSaldoAwal').disabled = !canSubmit;
+        }
+
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('debet-input') || e.target.classList.contains('kredit-input')) {
+                updateTotalDebetKredit();
+            }
+        });
+
+        document.getElementById('submitSaldoAwal').addEventListener('click', function() {
+            if (!selectedPeriodeId) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Pilih Periode',
+                    text: 'Silakan pilih periode terlebih dahulu.'
+                });
+                return;
+            }
+            const items = getSaldoAwalItems();
+            const totalAkun = parseInt(document.getElementById('totalAkun').textContent, 10);
+            // Validasi: jumlah item yang akan dikirim harus sama dengan jumlah akun di tabel
+            if (items.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Kosong',
+                    text: 'Isi nominal debet/kredit terlebih dahulu.'
+                });
+                return;
+            }
+            fetch(`${window.apiBaseUrl}/api/saldo-awal/batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        periode_id: selectedPeriodeId,
+                        items
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    // Penanganan error 422 akun_id_duplikat
+                    if (data.error && Array.isArray(data.akun_id_duplikat)) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            html: `
+                            <div>${data.error}</div>
+                            <div class="mt-2 text-sm text-slate-700">
+                                Akun duplikat: <b>${data.akun_id_duplikat.join(', ')}</b>
+                            </div>
+                        `,
+                            confirmButtonColor: '#ef4444'
+                        });
+                        document.querySelectorAll('.debet-input, .kredit-input').forEach(input => {
+                            if (data.akun_id_duplikat.includes(input.dataset.id)) {
+                                input.classList.add('border-red-500', 'ring-2', 'ring-red-200');
+                            } else {
+                                input.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
+                            }
+                        });
+                        return;
+                    }
+                    // Sukses seperti biasa
+                    const isSuccess = data && data.data && Array.isArray(data.data);
+                    const message = data.message || (isSuccess ? 'Saldo awal berhasil disimpan.' :
+                        'Gagal menyimpan saldo awal');
+                    Swal.fire({
+                        icon: isSuccess ? 'success' : 'error',
+                        title: isSuccess ? 'Berhasil' : 'Gagal',
+                        text: message,
+                        confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
+                    });
+                    if (isSuccess) {
+                        // Reset input dan highlight
+                        document.querySelectorAll('.debet-input, .kredit-input').forEach(input => {
+                            input.value = 0;
+                            input.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
+                        });
+                        updateTotalDebetKredit();
+                    }
+                });
+        });
+    </script>
 @endsection

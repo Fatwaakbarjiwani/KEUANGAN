@@ -13,15 +13,6 @@ class Controller extends BaseController
 
     public function __construct()
     {
-        // Middleware global: redirect ke login jika tidak ada token, kecuali untuk route tertentu
-        \Illuminate\Support\Facades\Route::matched(function ($event) {
-            $request = request();
-            $exceptRoutes = [
-                'login', 'login.submit', 'logout', 'logout.submit', 'debug', 'debug.session', // tambahkan nama route lain jika perlu
-            ];
-            if (!in_array(Route::currentRouteName(), $exceptRoutes) && !session('token')) {
-                abort(redirect()->route('login'));
-            }
-        });
+        // Tidak perlu lagi pengecekan session('token') di sini
     }
 }

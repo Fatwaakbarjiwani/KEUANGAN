@@ -15,13 +15,8 @@ class EnsureTokenSession
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $exceptRoutes = [
-            'login', 'login.submit', 'logout', 'logout.submit', 'debug', 'debug.session'
-        ];
-        $routeName = $request->route() ? $request->route()->getName() : null;
-        if (!in_array($routeName, $exceptRoutes) && !session('token')) {
-            return redirect()->route('login');
-        }
+        // Middleware ini tidak perlu lagi mengecek session('token')
+        // Karena pengecekan token dilakukan di client-side (JavaScript)
         return $next($request);
     }
 }

@@ -14,31 +14,13 @@ class AuthController extends Controller
 
     public function submitLogin(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-
-        $response = \Illuminate\Support\Facades\Http::post(env('API_BASE_URL').'/api/login', [
-            'login' => $request->email,
-            'password' => $request->password,
-        ]);
-
-        $data = $response->json();
-
-        if ($response->ok() && isset($data['token'])) {
-            // Simpan token ke session
-            session(['token' => $data['token']]);
-            return redirect('/');
-        } else {
-            return back()->withErrors(['login' => $data['message'] ?? 'Login gagal'])->withInput();
-        }
+        // Tidak digunakan lagi, login via JS
+        return redirect()->route('login');
     }
 
     public function logout(Request $request)
     {
-        $request->session()->forget('token');
-        $request->session()->flush();
+        // Tidak perlu hapus session token, cukup redirect ke login
         return redirect()->route('login');
     }
 } 

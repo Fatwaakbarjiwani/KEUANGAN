@@ -12,8 +12,7 @@
 <body class="bg-gradient-to-br from-indigo-600 to-blue-400 min-h-screen flex items-center justify-center">
     <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
         <h2 class="text-2xl font-bold text-center text-indigo-500 mb-6">LOGIN KEUANGAN</h2>
-        <form method="POST" action="{{ route('login.submit') }}">
-            @csrf
+        <form id="loginForm">
             <div class="mb-4">
                 <label class="block text-gray-700 mb-2" for="email">Email</label>
                 <div class="relative">
@@ -88,6 +87,30 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 `;
+            }
+        }
+
+        document.getElementById('loginForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const apiBaseUrl = document.querySelector('meta[name="api-base-url"]').content;
+            const response = await fetch(`${apiBaseUrl}/api/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    login: email,
+                    password
+                })
+            });
+            const data = await response.json();
+            if (response.ok && data.token) {
+                localStorage.setItem('token', data.token);
+                window.location.href = '/';
+            } else {
+                alert(data.message || 'Login gagal');
             }
         }
     </script>

@@ -117,8 +117,21 @@
                 </form>
                 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
                 <script>
-                    const token = @json($token);
+                    const token = localStorage.getItem('token');
                     const apiBaseUrl = @json($apiBaseUrl);
+
+                    function fetchAndRenderCoa() {
+                        fetch(`${apiBaseUrl}/api/coa`, {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                const coa = data.data || data;
+                                renderCoaTable(coa);
+                            });
+                    }
 
                     document.addEventListener('DOMContentLoaded', function() {
                         const form = document.getElementById('formTambahCoa');
@@ -178,7 +191,7 @@
                                     }).then(() => {
                                         if (isSuccess) {
                                             form.reset();
-                                            location.reload();
+                                            fetchAndRenderCoa();
                                         }
                                     });
                                 })
@@ -232,15 +245,7 @@
                             </tr>
                         </thead>
                         <tbody id="coaTableBody" class="bg-white divide-y divide-slate-200">
-                            @php $noGlobal = 1; @endphp
-                            @foreach ($coa as $row)
-                                @include('components.coa-row', [
-                                    'row' => $row,
-                                    'level' => 0,
-                                    'no' => $noGlobal,
-                                ])
-                                @php $noGlobal++; @endphp
-                            @endforeach
+                            <!-- Data akan diisi oleh JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -441,7 +446,7 @@
                                         'Akun berhasil dihapus.' : 'Gagal menghapus akun'),
                                     confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
                                 }).then(() => {
-                                    if (isSuccess) location.reload();
+                                    if (isSuccess) fetchAndRenderCoa();
                                 });
                             })
                             .catch(() => {
@@ -504,7 +509,7 @@
                             'Gagal update akun'),
                         confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
                     }).then(() => {
-                        if (isSuccess) location.reload();
+                        if (isSuccess) fetchAndRenderCoa();
                     });
                 })
                 .catch(() => {
@@ -516,5 +521,10 @@
                     });
                 });
         };
+
+        // Ambil data COA saat halaman pertama kali dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchAndRenderCoa()
+        });
     </script>
 @endsection

@@ -28,17 +28,28 @@
                 <form @submit.prevent="fetchPosisiKeuangan" class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <!-- Periode ID -->
                     <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-3">Periode ID</label>
-                        <input type="number" min="1" x-model="form.periode_id"
+                        <label class="block text-sm font-medium text-slate-600 mb-3">Periode</label>
+                        <select x-model="form.periode_id"
                             class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-3"
-                            placeholder="Masukkan ID Periode" required>
+                            required>
+                            <option value="">Pilih Periode</option>
+                            <template x-for="p in periodeList" :key="p.id">
+                                <option :value="p.id"
+                                    x-text="p.nama + ' (' + p.tanggal_mulai + ' s/d ' + p.tanggal_selesai + ')' "></option>
+                            </template>
+                        </select>
                     </div>
                     <!-- Level -->
                     <div>
                         <label class="block text-sm font-medium text-slate-600 mb-3">Level</label>
-                        <input type="number" min="1" x-model="form.level"
+                        <select x-model="form.level"
                             class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-3"
-                            placeholder="Level" required>
+                            required>
+                            <option value="">Semua Level</option>
+                            <template x-for="level in levelList" :key="level">
+                                <option :value="level" x-text="level"></option>
+                            </template>
+                        </select>
                     </div>
                 </form>
                 <div class="flex gap-2 mt-6">
@@ -149,12 +160,16 @@
                                 </td>
                             </tr>
                             <template x-if="dataLoaded && posisiKeuanganData.asset && posisiKeuanganData.asset.length > 0">
-                                <template x-for="row in posisiKeuanganData.asset" :key="row.id">
+                                <template x-for="row in flattenPosisiKeuangan(posisiKeuanganData.asset)"
+                                    :key="row.id">
                                     <tr>
                                         <td class="px-6 py-4 text-sm text-slate-600" x-text="row.account_code"></td>
-                                        <td class="px-6 py-4 text-sm text-slate-600" x-text="row.account_name"></td>
+                                        <td class="px-6 py-4 text-sm text-slate-600">
+                                            <span :style="`padding-left: ${row.indent}px`"
+                                                x-text="row.account_name"></span>
+                                        </td>
                                         <td class="px-6 py-4 text-right text-sm text-blue-600"
-                                            x-text="formatRupiah(row.saldo)"></td>
+                                            x-text="formatRupiah(row.saldo_akhir)"></td>
                                     </tr>
                                 </template>
                             </template>
@@ -170,12 +185,16 @@
                             </tr>
                             <template
                                 x-if="dataLoaded && posisiKeuanganData.kewajiban && posisiKeuanganData.kewajiban.length > 0">
-                                <template x-for="row in posisiKeuanganData.kewajiban" :key="row.id">
+                                <template x-for="row in flattenPosisiKeuangan(posisiKeuanganData.kewajiban)"
+                                    :key="row.id">
                                     <tr>
                                         <td class="px-6 py-4 text-sm text-slate-600" x-text="row.account_code"></td>
-                                        <td class="px-6 py-4 text-sm text-slate-600" x-text="row.account_name"></td>
+                                        <td class="px-6 py-4 text-sm text-slate-600">
+                                            <span :style="`padding-left: ${row.indent}px`"
+                                                x-text="row.account_name"></span>
+                                        </td>
                                         <td class="px-6 py-4 text-right text-sm text-blue-600"
-                                            x-text="formatRupiah(row.saldo)"></td>
+                                            x-text="formatRupiah(row.saldo_akhir)"></td>
                                     </tr>
                                 </template>
                             </template>
@@ -192,12 +211,16 @@
                             </tr>
                             <template
                                 x-if="dataLoaded && posisiKeuanganData.ekuitas && posisiKeuanganData.ekuitas.length > 0">
-                                <template x-for="row in posisiKeuanganData.ekuitas" :key="row.id">
+                                <template x-for="row in flattenPosisiKeuangan(posisiKeuanganData.ekuitas)"
+                                    :key="row.id">
                                     <tr>
                                         <td class="px-6 py-4 text-sm text-slate-600" x-text="row.account_code"></td>
-                                        <td class="px-6 py-4 text-sm text-slate-600" x-text="row.account_name"></td>
+                                        <td class="px-6 py-4 text-sm text-slate-600">
+                                            <span :style="`padding-left: ${row.indent}px`"
+                                                x-text="row.account_name"></span>
+                                        </td>
                                         <td class="px-6 py-4 text-right text-sm text-blue-600"
-                                            x-text="formatRupiah(row.saldo)"></td>
+                                            x-text="formatRupiah(row.saldo_akhir)"></td>
                                     </tr>
                                 </template>
                             </template>
@@ -224,7 +247,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script>
         window.API_BASE_URL = "{{ env('API_BASE_URL', 'http://localhost/api') }}";
-        window.API_TOKEN = "{{ session('token') }}";
+        window.API_TOKEN = localStorage.getItem('token');
 
         function posisiKeuanganApp() {
             return {
@@ -241,6 +264,8 @@
                 totalAsset: 0,
                 totalKewajibanEkuitas: 0,
                 statusBalance: '-',
+                periodeList: [],
+                levelList: [1, 2, 3],
                 fetchPosisiKeuangan() {
                     if (!this.form.periode_id || !this.form.level) return;
                     const token = window.API_TOKEN || '';
@@ -368,6 +393,36 @@
                     });
 
                     doc.save('posisi-keuangan.pdf');
+                },
+                init() {
+                    this.fetchPeriodeList();
+                },
+                fetchPeriodeList() {
+                    const token = window.API_TOKEN || '';
+                    const apiBaseUrl = window.API_BASE_URL;
+                    fetch(`${apiBaseUrl}/api/periode`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/json',
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            this.periodeList = data.data || data;
+                        });
+                },
+                flattenPosisiKeuangan(data, level = 1) {
+                    let rows = [];
+                    data.forEach(item => {
+                        rows.push({
+                            ...item,
+                            indent: (item.level - 1) * 24 // 24px per level
+                        });
+                        if (item.children && item.children.length > 0) {
+                            rows = rows.concat(this.flattenPosisiKeuangan(item.children, level + 1));
+                        }
+                    });
+                    return rows;
                 }
             }
         }

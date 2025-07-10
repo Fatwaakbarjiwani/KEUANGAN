@@ -59,8 +59,14 @@
                     </div>
                     <div>
                         <button type="submit"
-                            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-200 mt-6 md:mt-0">
-                            Tambah Periode
+                            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-200 mt-6 md:mt-0 relative">
+                            <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            <span class="btn-text">Tambah Periode</span>
                         </button>
                     </div>
                 </form>
@@ -185,8 +191,15 @@
                 </div>
                 <div>
                     <button type="submit"
-                        class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg mt-2">Simpan
-                        Perubahan</button>
+                        class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg mt-2 relative">
+                        <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                        <span class="btn-text">Simpan Perubahan</span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -313,44 +326,57 @@
                 });
         }
 
+        // Fungsi universal handleLoading
+        function handleLoading(btn, action) {
+            const spinner = btn.querySelector('.spinner');
+            const btnText = btn.querySelector('.btn-text');
+            const originalText = btnText ? btnText.textContent : null;
+            spinner.classList.remove('hidden');
+            if (btnText) btnText.textContent = 'Loading...';
+            btn.disabled = true;
+            return Promise.resolve(typeof action === 'function' ? action() : action)
+                .finally(() => {
+                    spinner.classList.add('hidden');
+                    if (btnText) btnText.textContent = originalText;
+                    btn.disabled = false;
+                });
+        }
+
         // Form tambah periode
         document.getElementById('formTambahPeriode').onsubmit = function(e) {
             e.preventDefault();
-            const form = e.target;
-            const body = {
-                nama: form.nama.value,
-                tanggal_mulai: form.tanggal_mulai.value,
-                tanggal_selesai: form.tanggal_selesai.value,
-                status: form.status.value
-            };
-            fetch(`${apiBaseUrl}/api/periode`, {
+            const btn = this.querySelector('button[type="submit"]');
+            handleLoading(btn, async () => {
+                const form = e.target;
+                const body = {
+                    nama: form.nama.value,
+                    tanggal_mulai: form.tanggal_mulai.value,
+                    tanggal_selesai: form.tanggal_selesai.value,
+                    status: form.status.value
+                };
+                const res = await fetch(`${apiBaseUrl}/api/periode`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(body)
-                })
-                .then(res => res.json())
-                .then(data => {
-                    console.log(data);
-                    
-                    // Jika response adalah objek data periode, anggap sukses
-                    const isSuccess = data.data.id;
-                    const message = data.message || (isSuccess ? 'Periode berhasil ditambahkan.' :
-                        'Gagal menambah periode');
-                    Swal.fire({
-                        icon: isSuccess ? 'success' : 'error',
-                        title: isSuccess ? 'Berhasil' : 'Gagal',
-                        text: message,
-                        confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
-                    }).then(() => {
-                        if (isSuccess) {
-                            form.reset();
-                            fetchAndRenderPeriode();
-                        }
-                    });
                 });
+                const data = await res.json();
+                const isSuccess = data.data;
+                const message = data.message || (isSuccess ? 'Periode berhasil ditambahkan.' :
+                    'Gagal menambah periode');
+                await Swal.fire({
+                    icon: isSuccess ? 'success' : 'error',
+                    title: isSuccess ? 'Berhasil' : 'Gagal',
+                    text: message,
+                    confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
+                });
+                if (isSuccess) {
+                    form.reset();
+                    fetchAndRenderPeriode();
+                }
+            });
         };
 
         // Event delegation untuk edit dan hapus
@@ -399,7 +425,7 @@
                             })
                             .then(res => res.json())
                             .then(data => {
-                                
+
                                 // Jika response adalah objek data periode, anggap sukses
                                 const isSuccess = data.message;
                                 const message = data.message || (isSuccess ?
@@ -470,39 +496,39 @@
             // Submit Edit
             document.getElementById('formEditPeriode').onsubmit = function(e) {
                 e.preventDefault();
-                const id = document.getElementById('edit_id').value;
-                const body = {
-                    nama: document.getElementById('edit_nama').value,
-                    tanggal_mulai: document.getElementById('edit_tanggal_mulai').value,
-                    tanggal_selesai: document.getElementById('edit_tanggal_selesai').value,
-                    status: document.getElementById('edit_status').value
-                };
-                fetch(`${apiBaseUrl}/api/periode/${id}`, {
+                const btn = this.querySelector('button[type="submit"]');
+                handleLoading(btn, async () => {
+                    const id = document.getElementById('edit_id').value;
+                    const body = {
+                        nama: document.getElementById('edit_nama').value,
+                        tanggal_mulai: document.getElementById('edit_tanggal_mulai').value,
+                        tanggal_selesai: document.getElementById('edit_tanggal_selesai').value,
+                        status: document.getElementById('edit_status').value
+                    };
+                    const res = await fetch(`${apiBaseUrl}/api/periode/${id}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify(body)
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        // Jika response adalah objek data periode, anggap sukses
-                        const isSuccess = data && typeof data === 'object' && data.id;
-                        const message = data.message || (isSuccess ? 'Periode berhasil diupdate.' :
-                            'Gagal mengupdate periode');
-                        Swal.fire({
-                            icon: isSuccess ? 'success' : 'error',
-                            title: isSuccess ? 'Berhasil' : 'Gagal',
-                            text: message,
-                            confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
-                        }).then(() => {
-                            if (isSuccess) {
-                                document.getElementById('modalEditPeriode').classList.add('hidden');
-                                fetchAndRenderPeriode();
-                            }
-                        });
                     });
+                    const data = await res.json();
+                    const isSuccess = data && typeof data === 'object' && data.id;
+                    const message = data.message || (isSuccess ? 'Periode berhasil diupdate.' :
+                        'Gagal mengupdate periode');
+                    await Swal.fire({
+                        icon: isSuccess ? 'success' : 'error',
+                        title: isSuccess ? 'Berhasil' : 'Gagal',
+                        text: message,
+                        confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
+                    });
+                    if (isSuccess) {
+                        document.getElementById('modalEditPeriode')
+                            .classList.add('hidden');
+                        fetchAndRenderPeriode();
+                    }
+                });
             };
         });
     </script>

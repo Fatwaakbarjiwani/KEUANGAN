@@ -11,7 +11,8 @@
                     </div>
                     <div>
                         <h1 class="text-3xl font-extrabold text-slate-700 tracking-tight">Laporan Saldo Awal</h1>
-                        <p class="text-slate-500 mt-1">Laporan saldo awal akun per periode akuntansi</p>
+                        <p class="text-slate-500 mt-1">Laporan saldo awal akun per periode akuntansi, </p>
+                        <p class="text-slate-500 mt-[-0.5vh]">Ini hanya untuk laporan saldo awal diawal system berjalan</p>
                     </div>
                     <span class="ml-auto px-3 py-1 bg-sky-100 text-sky-700 rounded-full text-xs font-semibold shadow-sm">
                         Laporan Keuangan
@@ -47,12 +48,35 @@
                     </div>
                     <div class="flex items-end gap-2">
                         <button type="submit" id="tampilkanBtn"
-                            class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-200">Tampilkan</button>
+                            class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-200 relative">
+                            <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            <span class="btn-text">Tampilkan</span>
+                        </button>
                         <button type="button" id="downloadPdfBtn"
-                            class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition hidden">Download
-                            PDF</button>
+                            class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition hidden relative">
+                            <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            <span class="btn-text">Download PDF</span>
+                        </button>
                         <button type="button" id="resetFilterBtn"
-                            class="bg-slate-400 hover:bg-slate-500 text-white font-medium py-2 px-4 rounded-lg transition">Reset</button>
+                            class="bg-slate-400 hover:bg-slate-500 text-white font-medium py-2 px-4 rounded-lg transition relative">
+                            <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            <span class="btn-text">Reset</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -87,11 +111,14 @@
                             <tr class="bg-slate-50">
                                 <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     No</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     ID Akun</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Kode Akun</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Nama Rekening</th>
                                 <th
                                     class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -128,6 +155,22 @@
         const token = localStorage.getItem('token');
         let selectedPeriodeId = null;
         let periodeListGlobal = [];
+
+        // Fungsi untuk loading spinner universal
+        function handleLoading(btn, action) {
+            const spinner = btn.querySelector('.spinner');
+            const btnText = btn.querySelector('.btn-text');
+            const originalText = btnText ? btnText.textContent : null;
+            spinner.classList.remove('hidden');
+            if (btnText) btnText.textContent = 'Loading...';
+            btn.disabled = true;
+            return Promise.resolve(action())
+                .finally(() => {
+                    spinner.classList.add('hidden');
+                    if (btnText) btnText.textContent = originalText;
+                    btn.disabled = false;
+                });
+        }
 
         function formatRupiah(num) {
             return 'Rp ' + Number(num).toLocaleString('id-ID');
@@ -311,67 +354,78 @@
                 }
                 let url = `${apiBaseUrl}/api/saldo-awal?periode_id=${selectedPeriodeId}`;
                 if (selectedLevel) url += `&level=${selectedLevel}`;
-                fetch(url, {
+                handleLoading(tampilkanBtn, async () => {
+                    const response = await fetch(url, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        // Ambil detail periode terpilih dari periodeListGlobal
-                        const periodeObj = periodeListGlobal.find(p => p.id == selectedPeriodeId) || {};
-                        renderLaporanSaldoAwalTable(data, periodeObj);
-                        lastTableData = data;
-                        tampilkanBtn.classList.add('hidden');
-                        downloadPdfBtn.classList.remove('hidden');
                     });
-            };
-            downloadPdfBtn.onclick = function() {
-                if (!lastTableData || lastTableData.length === 0) return;
-                const {
-                    jsPDF
-                } = window.jspdf;
-                const doc = new jsPDF();
-                const tableData = lastTableData.map((item, idx) => {
-                    const akun = item.akun || {};
-                    let debet = '',
-                        kredit = '';
-                    const jumlah = parseFloat(item.jumlah) || 0;
-                    if (item.tipe_saldo === 'Debit') debet = jumlah.toLocaleString('id-ID');
-                    if (item.tipe_saldo === 'Kredit') kredit = jumlah.toLocaleString('id-ID');
-                    return [
-                        idx + 1,
-                        akun.id || '-',
-                        akun.account_code || '-',
-                        akun.account_name || '-',
-                        debet,
-                        kredit
-                    ];
+                    const data = await response.json();
+
+                    // Ambil detail periode terpilih dari periodeListGlobal
+                    const periodeObj = periodeListGlobal.find(p => p.id == selectedPeriodeId) || {};
+                    renderLaporanSaldoAwalTable(data, periodeObj);
+                    lastTableData = data;
+                    tampilkanBtn.classList.add('hidden');
+                    downloadPdfBtn.classList.remove('hidden');
                 });
-                doc.text('Laporan Saldo Awal', 14, 14);
-                doc.autoTable({
-                    head: [
-                        ['No', 'ID Akun', 'Kode Akun', 'Nama Rekening', 'Debet', 'Kredit']
-                    ],
-                    body: tableData,
-                    startY: 20,
-                    styles: {
-                        fontSize: 10
-                    }
-                });
-                doc.save('laporan-saldo-awal.pdf');
             };
-            resetFilterBtn.onclick = function() {
-                document.getElementById('selectPeriode').value = '';
-                document.getElementById('selectLevel').value = '';
-                document.getElementById('laporanSaldoAwalTableBody').innerHTML = '';
-                document.getElementById('totalAkun').textContent = 0;
-                document.getElementById('tfootTotalDebet').textContent = 'Rp 0';
-                document.getElementById('tfootTotalKredit').textContent = 'Rp 0';
-                document.getElementById('statusSaldoAwal').textContent = '-';
-                tampilkanBtn.classList.remove('hidden');
-                downloadPdfBtn.classList.add('hidden');
-                lastTableData = [];
+            document.getElementById('downloadPdfBtn').onclick = function() {
+                const btn = this;
+                handleLoading(btn, async () => {
+                    if (!lastTableData || lastTableData.length === 0) return;
+                    const {
+                        jsPDF
+                    } = window.jspdf;
+                    const doc = new jsPDF();
+                    const tableData = lastTableData.map((item, idx) => {
+                        const akun = item.akun || {};
+                        let debet = '',
+                            kredit = '';
+                        const jumlah = parseFloat(item.jumlah) || 0;
+                        if (item.tipe_saldo === 'Debit') debet = jumlah.toLocaleString(
+                            'id-ID');
+                        if (item.tipe_saldo === 'Kredit') kredit = jumlah.toLocaleString(
+                            'id-ID');
+                        return [
+                            idx + 1,
+                            akun.id || '-',
+                            akun.account_code || '-',
+                            akun.account_name || '-',
+                            debet,
+                            kredit
+                        ];
+                    });
+                    doc.text('Laporan Saldo Awal', 14, 14);
+                    doc.autoTable({
+                        head: [
+                            ['No', 'ID Akun', 'Kode Akun', 'Nama Rekening', 'Debet',
+                                'Kredit'
+                            ]
+                        ],
+                        body: tableData,
+                        startY: 20,
+                        styles: {
+                            fontSize: 10
+                        }
+                    });
+                    doc.save('laporan-saldo-awal.pdf');
+                });
+            };
+            document.getElementById('resetFilterBtn').onclick = function() {
+                const btn = this;
+                handleLoading(btn, async () => {
+                    document.getElementById('selectPeriode').value = '';
+                    document.getElementById('selectLevel').value = '';
+                    document.getElementById('laporanSaldoAwalTableBody').innerHTML = '';
+                    document.getElementById('totalAkun').textContent = 0;
+                    document.getElementById('tfootTotalDebet').textContent = 'Rp 0';
+                    document.getElementById('tfootTotalKredit').textContent = 'Rp 0';
+                    document.getElementById('statusSaldoAwal').textContent = '-';
+                    tampilkanBtn.classList.remove('hidden');
+                    downloadPdfBtn.classList.add('hidden');
+                    lastTableData = [];
+                });
             };
         });
     </script>

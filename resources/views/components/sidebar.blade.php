@@ -73,22 +73,6 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{ route('jurnalPemasukan') }}"
-                                class="flex items-center px-4 py-2 rounded-lg text-white transition
-                                {{ request()->routeIs('jurnalPemasukan') ? 'bg-indigo-800' : 'hover:bg-indigo-800' }}">
-                                <img src="images/iconPemasukan.svg" class="w-6 h-6 mr-2" alt="">
-                                Jurnal Pemasukan
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ route('jurnalPengeluaran') }}"
-                                class="flex items-center px-4 py-2 rounded-lg text-white transition
-                                {{ request()->routeIs('jurnalPengeluaran') ? 'bg-indigo-800' : 'hover:bg-indigo-800' }}">
-                                <img src="images/iconPengeluaran.svg" class="w-6 h-6 mr-2" alt="">
-                                Jurnal Pengeluaran
-                            </a>
-                        </li>
-                        <li>
                             <a href="{{ route('jurnalUmum') }}"
                                 class="flex items-center px-4 py-2 rounded-lg text-white transition
                                 {{ request()->routeIs('jurnalUmum') ? 'bg-indigo-800' : 'hover:bg-indigo-800' }}">
@@ -126,13 +110,6 @@
                                 {{ request()->routeIs('laporan-aktivitas') ? 'bg-indigo-800' : 'hover:bg-indigo-800' }}">
                                 <img src="images/iconAktifitas.svg" class="w-6 h-6 mr-2" alt="">
                                 Laporan Aktivitas
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#"
-                                class="flex items-center px-4 py-2 rounded-lg text-white hover:bg-indigo-600 transition">
-                                <img src="images/iconTutupBuku.svg" class="w-6 h-6 mr-2" alt="">
-                                Tutup Buku
                             </a>
                         </li>
                     </ul>

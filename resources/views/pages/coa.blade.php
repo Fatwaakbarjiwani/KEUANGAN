@@ -105,12 +105,15 @@
                         </div>
                         <div class="md:col-span-1">
                             <button type="submit"
-                                class="flex items-center text-sm bg-sky-500 hover:bg-sky-600 text-white py-2 px-4 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-sky-200 w-full justify-center mt-6 md:mt-0">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+                                class="flex items-center text-sm bg-sky-500 hover:bg-sky-600 text-white py-2 px-4 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-sky-200 w-full justify-center mt-6 md:mt-0 relative">
+                                <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
+                                    </path>
                                 </svg>
-                                Tambah
+                                <span class="btn-text">Tambah</span>
                             </button>
                         </div>
                     </div>
@@ -119,6 +122,24 @@
                 <script>
                     const token = localStorage.getItem('token');
                     const apiBaseUrl = @json($apiBaseUrl);
+
+                    // Fungsi untuk menangani loading state
+                    function handleLoading(btn, action) {
+                        const spinner = btn.querySelector('.spinner');
+                        const btnText = btn.querySelector('.btn-text');
+                        const originalText = btnText ? btnText.textContent : null;
+
+                        spinner.classList.remove('hidden');
+                        if (btnText) btnText.textContent = 'Loading...';
+                        btn.disabled = true;
+
+                        return Promise.resolve(action())
+                            .finally(() => {
+                                spinner.classList.add('hidden');
+                                if (btnText) btnText.textContent = originalText;
+                                btn.disabled = false;
+                            });
+                    }
 
                     function fetchAndRenderCoa() {
                         fetch(`${apiBaseUrl}/api/coa`, {
@@ -137,72 +158,60 @@
                         const form = document.getElementById('formTambahCoa');
                         form.onsubmit = function(e) {
                             e.preventDefault();
-                            // Ambil data input manual
-                            const account_code = form.querySelector('[name="account_code"]').value.trim();
-                            const account_name = form.querySelector('[name="account_name"]').value.trim();
-                            const level = form.querySelector('[name="level"]').value;
-                            const parent_id = form.querySelector('[name="parent_id"]').value;
-                            const account_type = form.querySelector('[name="account_type"]').value;
-                            const is_active = form.querySelector('[name="is_active"]').value;
-                            // Validasi sederhana
-                            if (!account_code || !account_name || !level || !account_type || !is_active) {
-                                Swal.fire({
-                                    icon: 'warning',
-                                    title: 'Peringatan',
-                                    text: 'Semua field wajib diisi!',
-                                    confirmButtonColor: '#ef4444'
-                                });
-                                return;
-                            }
-                            // Siapkan data untuk dikirim
-                            const data = {
-                                account_code,
-                                account_name,
-                                level,
-                                parent_id,
-                                account_type,
-                                is_active
-                            };
-                            fetch(`${apiBaseUrl}/api/coa/create`, {
+                            const submitBtn = form.querySelector('button[type="submit"]');
+
+                            handleLoading(submitBtn, async () => {
+                                // Ambil data input manual
+                                const account_code = form.querySelector('[name="account_code"]').value.trim();
+                                const account_name = form.querySelector('[name="account_name"]').value.trim();
+                                const level = form.querySelector('[name="level"]').value;
+                                const parent_id = form.querySelector('[name="parent_id"]').value;
+                                const account_type = form.querySelector('[name="account_type"]').value;
+                                const is_active = form.querySelector('[name="is_active"]').value;
+                                // Validasi sederhana
+                                if (!account_code || !account_name || !level || !account_type || !is_active) {
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: 'Peringatan',
+                                        text: 'Semua field wajib diisi!',
+                                        confirmButtonColor: '#ef4444'
+                                    });
+                                    return;
+                                }
+                                // Siapkan data untuk dikirim
+                                const data = {
+                                    account_code,
+                                    account_name,
+                                    level,
+                                    parent_id,
+                                    account_type,
+                                    is_active
+                                };
+                                const response = await fetch(`${apiBaseUrl}/api/coa/create`, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
                                         'Authorization': `Bearer ${token}`
                                     },
                                     body: JSON.stringify(data)
-                                })
-                                .then(res => {
-                                    const isSuccess = res.ok;
-                                    return res.json().then(data => ({
-                                        data,
-                                        isSuccess
-                                    }));
-                                })
-                                .then(({
-                                    data,
-                                    isSuccess
-                                }) => {
-                                    Swal.fire({
-                                        icon: isSuccess ? 'success' : 'error',
-                                        title: isSuccess ? 'Berhasil' : 'Gagal',
-                                        text: data.message || (isSuccess ? 'Akun berhasil ditambahkan.' :
-                                            'Gagal menambah akun'),
-                                        confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
-                                    }).then(() => {
-                                        if (isSuccess) {
-                                            form.reset();
-                                            fetchAndRenderCoa();
-                                        }
-                                    });
-                                })
-                                .catch(() => {
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Gagal',
-                                        text: 'Terjadi kesalahan',
-                                        confirmButtonColor: '#ef4444'
-                                    });
                                 });
+                                const responseData = await response.json();
+                                const isSuccess = response.ok;
+
+                                Swal.fire({
+                                    icon: isSuccess ? 'success' : 'error',
+                                    title: isSuccess ? 'Berhasil' : 'Gagal',
+                                    text: responseData.message || (isSuccess ?
+                                        'Akun berhasil ditambahkan.' :
+                                        'Gagal menambah akun'),
+                                    confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
+                                }).then(() => {
+                                    if (isSuccess) {
+                                        form.reset();
+                                        fetchAndRenderCoa();
+                                    }
+                                });
+                            });
                         };
                     });
                 </script>
@@ -308,8 +317,16 @@
                         </div>
                         <div>
                             <button type="submit"
-                                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg mt-2">Simpan
-                                Perubahan</button>
+                                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg mt-2 relative">
+                                <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
+                                    </path>
+                                </svg>
+                                <span class="btn-text">Simpan Perubahan</span>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -367,8 +384,12 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-center">
                 <div class="flex justify-center space-x-2">
-                    <button type="button" class="btn-edit-coa bg-amber-400 hover:bg-amber-500 text-white py-1 px-3 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-amber-200" data-id="${row.id}" title="Edit Akun">
-                        <img src="images/iconEdit.svg" class="min-w-4 min-h-4 w-5" alt="">
+                    <button type="button" class="btn-edit-coa bg-amber-400 hover:bg-amber-500 text-white py-1 px-3 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-amber-200 relative" data-id="${row.id}" title="Edit Akun">
+                        <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                        <img src="images/iconEdit.svg" class="min-w-4 min-h-4 w-5 btn-icon" alt="">
                     </button>
                     <button type="button" class="btn-delete-coa bg-rose-400 hover:bg-rose-500 text-white py-1 px-3 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-rose-200" data-id="${row.id}" title="Hapus Akun">
                         <img src="images/iconSampah.svg" class="min-w-4 min-h-4 w-5" alt="">
@@ -412,6 +433,8 @@
             const btnDelete = e.target.closest('.btn-delete-coa');
             if (btnDelete) {
                 const id = btnDelete.getAttribute('data-id');
+                // console.log(id);
+
                 Swal.fire({
                     title: 'Hapus Akun COA?',
                     text: 'Data yang dihapus tidak dapat dikembalikan!',
@@ -473,53 +496,43 @@
         // Submit edit
         document.getElementById('formEditCoa').onsubmit = function(e) {
             e.preventDefault();
-            const id = document.getElementById('edit_coa_id').value;
-            const body = {
-                account_code: document.getElementById('edit_account_code').value,
-                account_name: document.getElementById('edit_account_name').value,
-                level: parseInt(document.getElementById('edit_level').value),
-                parent_id: document.getElementById('edit_parent_id').value ? parseInt(document
-                    .getElementById('edit_parent_id').value) : null,
-                account_type: document.getElementById('edit_account_type').value,
-                is_active: document.getElementById('edit_is_active').value === 'true'
-            };
-            fetch(`${apiBaseUrl}/api/coa/${id}`, {
+            const submitBtn = this.querySelector('button[type="submit"]');
+
+            handleLoading(submitBtn, async () => {
+                const id = document.getElementById('edit_coa_id').value;
+                const body = {
+                    account_code: document.getElementById('edit_account_code').value,
+                    account_name: document.getElementById('edit_account_name').value,
+                    level: parseInt(document.getElementById('edit_level').value),
+                    parent_id: document.getElementById('edit_parent_id').value ? parseInt(document
+                        .getElementById('edit_parent_id').value) : null,
+                    account_type: document.getElementById('edit_account_type').value,
+                    is_active: document.getElementById('edit_is_active').value === 'true'
+                };
+                const response = await fetch(`${apiBaseUrl}/api/coa/${id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(body)
-                })
-                .then(res => {
-                    const isSuccess = res.ok;
-                    return res.json().then(data => ({
-                        data,
-                        isSuccess
-                    }));
-                })
-                .then(({
-                    data,
-                    isSuccess
-                }) => {
-                    Swal.fire({
-                        icon: isSuccess ? 'success' : 'error',
-                        title: isSuccess ? 'Berhasil' : 'Gagal',
-                        text: data.message || (isSuccess ? 'Akun berhasil diupdate.' :
-                            'Gagal update akun'),
-                        confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
-                    }).then(() => {
-                        if (isSuccess) fetchAndRenderCoa();
-                    });
-                })
-                .catch(() => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: 'Terjadi kesalahan',
-                        confirmButtonColor: '#ef4444'
-                    });
                 });
+                const responseData = await response.json();
+                const isSuccess = response.ok;
+
+                Swal.fire({
+                    icon: isSuccess ? 'success' : 'error',
+                    title: isSuccess ? 'Berhasil' : 'Gagal',
+                    text: responseData.message || (isSuccess ? 'Akun berhasil diupdate.' :
+                        'Gagal update akun'),
+                    confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
+                }).then(() => {
+                    if (isSuccess) {
+                        document.getElementById('modalEditCoa').classList.add('hidden');
+                        fetchAndRenderCoa();
+                    }
+                });
+            });
         };
 
         // Ambil data COA saat halaman pertama kali dimuat

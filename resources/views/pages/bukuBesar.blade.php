@@ -124,36 +124,40 @@
                     </form>
                     <div class="flex gap-2 mt-6">
                         <button type="button" @click="resetForm"
-                            class="flex-1 text-slate-600 bg-slate-100 hover:bg-slate-200 focus:ring-4 focus:ring-slate-300 font-medium rounded-lg text-sm px-4 py-3 focus:outline-none transition-colors">
-                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                            class="flex-1 text-slate-600 bg-slate-100 hover:bg-slate-200 focus:ring-4 focus:ring-slate-300 font-medium rounded-lg text-sm px-4 py-3 focus:outline-none transition-colors relative">
+                            <svg class="spinner hidden animate-spin h-4 w-4 text-slate-600 absolute left-4"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
                                 </path>
                             </svg>
-                            Reset
+                            <span class="btn-text">Reset</span>
                         </button>
                         <template x-if="!dataLoaded">
                             <button type="button" @click="fetchBukuBesar"
-                                class="flex-1 text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg text-sm px-4 py-3 focus:outline-none transition-colors">
-                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                class="flex-1 text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg text-sm px-4 py-3 focus:outline-none transition-colors relative">
+                                <svg class="spinner hidden animate-spin h-5 w-5 text-white absolute left-4"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
                                     </path>
                                 </svg>
-                                Tampil
+                                <span class="btn-text">Tampil</span>
                             </button>
                         </template>
                         <template x-if="dataLoaded">
                             <button type="button" @click="downloadPDF"
-                                class="flex-1 text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-3 focus:outline-none transition-colors">
-                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                class="flex-1 text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-3 focus:outline-none transition-colors relative">
+                                <svg class="spinner hidden animate-spin h-5 w-5 text-white absolute left-4"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
                                     </path>
                                 </svg>
-                                Download PDF
+                                <span class="btn-text">Download PDF</span>
                             </button>
                         </template>
                     </div>
@@ -243,39 +247,63 @@
                 bukuBesarData: null,
                 dataLoaded: false,
                 loading: false,
-                fetchBukuBesar() {
-                    if (!this.form.akun_id || !this.form.start_date || !this.form.end_date || !this.form.periode_id) return;
-                    this.loading = true;
-                    fetch(
-                            `${apiBaseUrl}/api/laporan/buku-besar?akun_id=${this.form.akun_id}&start_date=${this.form.start_date}&end_date=${this.form.end_date}&periode_id=${this.form.periode_id}`, {
-                                headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                    'Accept': 'application/json',
-                                }
-                            }
-                        )
-                        .then(res => res.json())
-                        .then(data => {
-                            this.bukuBesarData = data;
-                            this.dataLoaded = true;
-                        })
-                        .catch(() => {
-                            this.bukuBesarData = null;
-                            this.dataLoaded = false;
-                        })
+
+                // Fungsi untuk menangani loading state
+                handleLoading(btn, action) {
+                    const spinner = btn.querySelector('.spinner');
+                    const btnText = btn.querySelector('.btn-text');
+                    const originalText = btnText.textContent;
+
+                    spinner.classList.remove('hidden');
+                    btnText.textContent = 'Loading...';
+                    btn.disabled = true;
+
+                    return Promise.resolve(action())
                         .finally(() => {
-                            this.loading = false;
+                            spinner.classList.add('hidden');
+                            btnText.textContent = originalText;
+                            btn.disabled = false;
                         });
                 },
+
+                fetchBukuBesar() {
+                    if (!this.form.akun_id || !this.form.start_date || !this.form.end_date || !this.form.periode_id) return;
+
+                    const btn = event.target.closest('button');
+                    this.handleLoading(btn, async () => {
+                        this.loading = true;
+                        try {
+                            const response = await fetch(
+                                `${apiBaseUrl}/api/laporan/buku-besar?akun_id=${this.form.akun_id}&start_date=${this.form.start_date}&end_date=${this.form.end_date}&periode_id=${this.form.periode_id}`, {
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Accept': 'application/json',
+                                    }
+                                }
+                            );
+                            const data = await response.json();
+                            this.bukuBesarData = data;
+                            this.dataLoaded = true;
+                        } catch (error) {
+                            this.bukuBesarData = null;
+                            this.dataLoaded = false;
+                        } finally {
+                            this.loading = false;
+                        }
+                    });
+                },
                 resetForm() {
-                    this.form = {
-                        akun_id: '',
-                        start_date: '',
-                        end_date: '',
-                        periode_id: ''
-                    };
-                    this.bukuBesarData = null;
-                    this.dataLoaded = false;
+                    const btn = event.target.closest('button');
+                    this.handleLoading(btn, () => {
+                        this.form = {
+                            akun_id: '',
+                            start_date: '',
+                            end_date: '',
+                            periode_id: ''
+                        };
+                        this.bukuBesarData = null;
+                        this.dataLoaded = false;
+                    });
                 },
                 formatRupiah(val) {
                     if (!val) return '-';
@@ -288,57 +316,75 @@
                 },
                 downloadPDF() {
                     if (!this.bukuBesarData) return;
-                    const {
-                        jsPDF
-                    } = window.jspdf;
-                    const doc = new jsPDF();
-                    let y = 10;
-                    doc.setFontSize(16);
-                    doc.text('Laporan Buku Besar', 105, y, {
-                        align: 'center'
-                    });
-                    y += 10;
-                    doc.setFontSize(11);
-                    doc.text(`Akun ID: ${this.form.akun_id} | Periode ID: ${this.form.periode_id}`, 14, y);
-                    y += 7;
-                    doc.text(`Periode: ${this.form.start_date} s/d ${this.form.end_date}`, 14, y);
-                    y += 7;
-                    doc.text(`Saldo Awal: Rp ${Number(this.bukuBesarData.saldo_awal).toLocaleString('id-ID')}`, 14, y);
-                    y += 7;
-                    // Table header
-                    const headers = [
-                        ['Tanggal', 'No. Bukti', 'Keterangan', 'Debet', 'Kredit', 'Saldo']
-                    ];
-                    // Table body
-                    const body = (this.bukuBesarData.jurnals || []).map(j => [
-                        this.formatTanggal(j.jurnal.tanggal),
-                        j.jurnal.nomor_jurnal,
-                        j.jurnal.keterangan || '-',
-                        'Rp ' + Number(j.debit).toLocaleString('id-ID'),
-                        'Rp ' + Number(j.kredit).toLocaleString('id-ID'),
-                        'Rp ' + Number(j.saldo_berjalan).toLocaleString('id-ID')
-                    ]);
-                    if (body.length > 0) {
-                        doc.autoTable({
-                            head: headers,
-                            body: body,
-                            startY: y,
-                            theme: 'grid',
-                            headStyles: {
-                                fillColor: [59, 130, 246]
-                            },
-                            styles: {
-                                fontSize: 10
-                            },
+
+                    const btn = event.target.closest('button');
+                    this.handleLoading(btn, () => {
+                        const {
+                            jsPDF
+                        } = window.jspdf;
+                        const doc = new jsPDF();
+                        let y = 10;
+                        doc.setFontSize(16);
+                        doc.text('Laporan Buku Besar', 105, y, {
+                            align: 'center'
                         });
-                        y = doc.lastAutoTable.finalY + 5;
-                    } else {
-                        doc.text('Belum ada data buku besar', 14, y);
+                        y += 10;
+                        doc.setFontSize(11);
+
+                        // Get account name and period name
+                        const selectedAccount = this.coaList.find(a => a.id == this.form.akun_id);
+                        const selectedPeriod = this.periodeList.find(p => p.id == this.form.periode_id);
+                        const accountName = selectedAccount ?
+                            `${selectedAccount.account_code} - ${selectedAccount.account_name}` :
+                            `ID: ${this.form.akun_id}`;
+                        const periodName = selectedPeriod ? selectedPeriod.nama : `ID: ${this.form.periode_id}`;
+
+                        doc.text(`Akun: ${accountName}`, 14, y);
                         y += 7;
-                    }
-                    doc.setFontSize(11);
-                    doc.text(`Saldo Akhir: Rp ${Number(this.bukuBesarData.saldo_akhir).toLocaleString('id-ID')}`, 14, y);
-                    doc.save('buku-besar.pdf');
+                        doc.text(`Periode: ${periodName}`, 14, y);
+                        y += 7;
+                        doc.text(`Tanggal: ${this.form.start_date} s/d ${this.form.end_date}`, 14, y);
+                        y += 7;
+                        doc.text(`Saldo Awal: Rp ${Number(this.bukuBesarData.saldo_awal).toLocaleString('id-ID')}`,
+                            14, y);
+                        y += 7;
+                        // Table header
+                        const headers = [
+                            ['Tanggal', 'No. Bukti', 'Keterangan', 'Debet', 'Kredit', 'Saldo']
+                        ];
+                        // Table body
+                        const body = (this.bukuBesarData.jurnals || []).map(j => [
+                            this.formatTanggal(j.jurnal.tanggal),
+                            j.jurnal.nomor_jurnal,
+                            j.jurnal.keterangan || '-',
+                            'Rp ' + Number(j.debit).toLocaleString('id-ID'),
+                            'Rp ' + Number(j.kredit).toLocaleString('id-ID'),
+                            'Rp ' + Number(j.saldo_berjalan).toLocaleString('id-ID')
+                        ]);
+                        if (body.length > 0) {
+                            doc.autoTable({
+                                head: headers,
+                                body: body,
+                                startY: y,
+                                theme: 'grid',
+                                headStyles: {
+                                    fillColor: [59, 130, 246]
+                                },
+                                styles: {
+                                    fontSize: 10
+                                },
+                            });
+                            y = doc.lastAutoTable.finalY + 5;
+                        } else {
+                            doc.text('Belum ada data buku besar', 14, y);
+                            y += 7;
+                        }
+                        doc.setFontSize(11);
+                        doc.text(
+                            `Saldo Akhir: Rp ${Number(this.bukuBesarData.saldo_akhir).toLocaleString('id-ID')}`,
+                            14, y);
+                        doc.save('buku-besar.pdf');
+                    });
                 },
                 fetchCoaList() {
                     fetch(`${window.apiBaseUrl}/api/coa`, {

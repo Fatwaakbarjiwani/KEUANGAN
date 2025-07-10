@@ -124,9 +124,15 @@
                     </table>
                     <div class="flex justify-end my-6 px-2">
                         <button id="submitSaldoAwal"
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow disabled:opacity-50 disabled:cursor-not-allowed relative"
                             disabled>
-                            Simpan Saldo Awal
+                            <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            <span class="btn-text">Simpan Saldo Awal</span>
                         </button>
                     </div>
                 </div>
@@ -139,6 +145,22 @@
     <script>
         window.apiBaseUrl = "{{ env('API_BASE_URL', 'http://localhost/api') }}";
         const token = localStorage.getItem('token');
+
+        // Fungsi untuk loading spinner universal
+        function handleLoading(btn, action) {
+            const spinner = btn.querySelector('.spinner');
+            const btnText = btn.querySelector('.btn-text');
+            const originalText = btnText ? btnText.textContent : null;
+            spinner.classList.remove('hidden');
+            if (btnText) btnText.textContent = 'Loading...';
+            btn.disabled = true;
+            return Promise.resolve(action())
+                .finally(() => {
+                    spinner.classList.add('hidden');
+                    if (btnText) btnText.textContent = originalText;
+                    btn.disabled = false;
+                });
+        }
 
         function renderCoaTable(coa, tbody) {
             tbody.innerHTML = '';
@@ -272,27 +294,30 @@
             }
         });
 
-        document.getElementById('submitSaldoAwal').addEventListener('click', function() {
-            if (!selectedPeriodeId) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Pilih Periode',
-                    text: 'Silakan pilih periode terlebih dahulu.'
-                });
-                return;
-            }
-            const items = getSaldoAwalItems();
-            const totalAkun = parseInt(document.getElementById('totalAkun').textContent, 10);
-            // Validasi: jumlah item yang akan dikirim harus sama dengan jumlah akun di tabel
-            if (items.length === 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Data Kosong',
-                    text: 'Isi nominal debet/kredit terlebih dahulu.'
-                });
-                return;
-            }
-            fetch(`${window.apiBaseUrl}/api/saldo-awal/batch`, {
+        document.getElementById('submitSaldoAwal').onclick = function() {
+            const btn = this;
+            handleLoading(btn, async () => {
+                if (!selectedPeriodeId) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Pilih Periode',
+                        text: 'Silakan pilih periode terlebih dahulu.'
+                    });
+                    return;
+                }
+                const items = getSaldoAwalItems();
+                const totalAkun = parseInt(document.getElementById('totalAkun').textContent, 10);
+                // Validasi: jumlah item yang akan dikirim harus sama dengan jumlah akun di tabel
+                if (items.length === 0) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Data Kosong',
+                        text: 'Isi nominal debet/kredit terlebih dahulu.'
+                    });
+                    return;
+                }
+
+                const response = await fetch(`${window.apiBaseUrl}/api/saldo-awal/batch`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -302,50 +327,54 @@
                         periode_id: selectedPeriodeId,
                         items
                     })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    // Penanganan error 422 akun_id_duplikat
-                    if (data.error && Array.isArray(data.akun_id_duplikat)) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            html: `
-                            <div>${data.error}</div>
-                            <div class="mt-2 text-sm text-slate-700">
-                                Akun duplikat: <b>${data.akun_id_duplikat.join(', ')}</b>
-                            </div>
-                        `,
-                            confirmButtonColor: '#ef4444'
-                        });
-                        document.querySelectorAll('.debet-input, .kredit-input').forEach(input => {
-                            if (data.akun_id_duplikat.includes(input.dataset.id)) {
-                                input.classList.add('border-red-500', 'ring-2', 'ring-red-200');
-                            } else {
-                                input.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
-                            }
-                        });
-                        return;
-                    }
-                    // Sukses seperti biasa
-                    const isSuccess = data && data.data && Array.isArray(data.data);
-                    const message = data.message || (isSuccess ? 'Saldo awal berhasil disimpan.' :
-                        'Gagal menyimpan saldo awal');
-                    Swal.fire({
-                        icon: isSuccess ? 'success' : 'error',
-                        title: isSuccess ? 'Berhasil' : 'Gagal',
-                        text: message,
-                        confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
-                    });
-                    if (isSuccess) {
-                        // Reset input dan highlight
-                        document.querySelectorAll('.debet-input, .kredit-input').forEach(input => {
-                            input.value = 0;
-                            input.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
-                        });
-                        updateTotalDebetKredit();
-                    }
                 });
-        });
+
+                const data = await response.json();
+
+                // Penanganan error 422 akun_id_duplikat
+                if (data.error && Array.isArray(data.akun_id_duplikat)) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        html: `
+                    <div>${data.error}</div>
+                    <div class="mt-2 text-sm text-slate-700">
+                        Akun duplikat: <b>${data.akun_id_duplikat.join(', ')}</b>
+                    </div>
+                `,
+                        confirmButtonColor: '#ef4444'
+                    });
+                    document.querySelectorAll('.debet-input, .kredit-input').forEach(input => {
+                        if (data.akun_id_duplikat.includes(input.dataset.id)) {
+                            input.classList.add('border-red-500', 'ring-2',
+                                'ring-red-200');
+                        } else {
+                            input.classList.remove('border-red-500', 'ring-2',
+                                'ring-red-200');
+                        }
+                    });
+                    return;
+                }
+                // Sukses seperti biasa
+                const isSuccess = data && data.data && Array.isArray(data.data);
+                const message = data.message || (isSuccess ? 'Saldo awal berhasil disimpan.' :
+                    'Gagal menyimpan saldo awal');
+                await Swal.fire({
+                    icon: isSuccess ? 'success' : 'error',
+                    title: isSuccess ? 'Berhasil' : 'Gagal',
+                    text: message,
+                    confirmButtonColor: isSuccess ? '#2563eb' : '#ef4444'
+                });
+                if (isSuccess) {
+                    // Reset input dan highlight
+                    document.querySelectorAll('.debet-input, .kredit-input').forEach(input => {
+                        input.value = 0;
+                        input.classList.remove('border-red-500', 'ring-2',
+                            'ring-red-200');
+                    });
+                    updateTotalDebetKredit();
+                }
+            });
+        };
     </script>
 @endsection

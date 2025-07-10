@@ -7,6 +7,7 @@
     <title>Login - Keuangan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <meta name="api-base-url" content="{{ $apiBaseUrl }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body class="bg-gradient-to-br from-indigo-600 to-blue-400 min-h-screen flex items-center justify-center">
@@ -61,9 +62,15 @@
                 </label>
                 <a href="#" class="text-indigo-600 hover:underline text-sm">Forgot Password?</a>
             </div>
-            <button type="submit"
-                class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2 px-4 rounded-lg transition">
-                Login
+            <button type="submit" id="loginBtn"
+                class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2 px-4 rounded-lg transition flex items-center justify-center gap-2 relative">
+                <svg id="spinner" class="hidden animate-spin h-5 w-5 text-white absolute left-4"
+                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                        stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <span id="loginBtnText">Login</span>
             </button>
         </form>
     </div>
@@ -95,6 +102,10 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const apiBaseUrl = document.querySelector('meta[name="api-base-url"]').content;
+            // Tampilkan spinner dan disable tombol
+            document.getElementById('spinner').classList.remove('hidden');
+            document.getElementById('loginBtnText').textContent = 'Loading...';
+            document.getElementById('loginBtn').disabled = true;
             const response = await fetch(`${apiBaseUrl}/api/login`, {
                 method: 'POST',
                 headers: {
@@ -106,11 +117,19 @@
                 })
             });
             const data = await response.json();
+            // Sembunyikan spinner dan enable tombol
+            document.getElementById('spinner').classList.add('hidden');
+            document.getElementById('loginBtnText').textContent = 'Login';
+            document.getElementById('loginBtn').disabled = false;
             if (response.ok && data.token) {
                 localStorage.setItem('token', data.token);
                 window.location.href = '/';
             } else {
-                alert(data.message || 'Login gagal');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Login Gagal',
+                    text: data.message || `Login gagal`
+                });
             }
         }
     </script>

@@ -113,11 +113,37 @@
                     </div>
                     <div class="flex flex-wrap gap-3 p-4 border-t border-slate-200">
                         <button type="button" id="resetDetailBtn"
-                            class="bg-slate-400 hover:bg-slate-500 text-white font-semibold px-6 py-2 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-slate-200">Reset</button>
+                            class="bg-slate-400 hover:bg-slate-500 text-white font-semibold px-6 py-2 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-slate-200 relative">
+                            <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            <span class="btn-text">Reset</span>
+                        </button>
                         <button type="button" id="addDetailBtn"
-                            class="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-6 py-2 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-sky-200">Tambah</button>
+                            class="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-6 py-2 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-sky-200 relative">
+                            <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
+                                </path>
+                            </svg>
+                            <span class="btn-text">Tambah</span>
+                        </button>
                         <button type="button" id="simpanJurnalBtn"
-                            class="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-green-200">Simpan</button>
+                            class="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-md shadow transition focus:outline-none focus:ring-2 focus:ring-green-200 relative">
+                            <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
+                                </path>
+                            </svg>
+                            <span class="btn-text">Simpan</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -143,6 +169,24 @@
             }
         ];
 
+        // Fungsi untuk menangani loading state
+        function handleLoading(btn, action) {
+            const spinner = btn.querySelector('.spinner');
+            const btnText = btn.querySelector('.btn-text');
+            const originalText = btnText.textContent;
+
+            spinner.classList.remove('hidden');
+            btnText.textContent = 'Loading...';
+            btn.disabled = true;
+
+            return Promise.resolve(action())
+                .finally(() => {
+                    spinner.classList.add('hidden');
+                    btnText.textContent = originalText;
+                    btn.disabled = false;
+                });
+        }
+
         function formatRupiah(num) {
             return 'Rp ' + Number(num || 0).toLocaleString('id-ID');
         }
@@ -157,11 +201,25 @@
                 .then(data => {
                     periodeList = data.data || data;
                     const select = document.getElementById('inputPeriode');
-                    select.innerHTML = '<option value="">Pilih Periode</option>';
-                    periodeList.forEach(p => {
-                        select.innerHTML +=
-                            `<option value="${p.id}">${p.nama} (${p.tanggal_mulai} s/d ${p.tanggal_selesai})</option>`;
-                    });
+
+                    // Find active period
+                    const activePeriod = periodeList.find(p => p.status && p.status.toLowerCase() === 'aktif');
+
+                    if (activePeriod) {
+                        // Only show active period and make it read-only
+                        select.innerHTML =
+                            `<option value="${activePeriod.id}" selected>${activePeriod.nama} (${activePeriod.tanggal_mulai} s/d ${activePeriod.tanggal_selesai}) - Aktif</option>`;
+                        select.disabled = true;
+                        select.classList.add('bg-slate-100', 'cursor-not-allowed');
+
+                        // Trigger change event to update any dependent fields
+                        select.dispatchEvent(new Event('change'));
+                    } else {
+                        // No active period found
+                        select.innerHTML = '<option value="">Tidak ada periode aktif</option>';
+                        select.disabled = true;
+                        select.classList.add('bg-slate-100', 'cursor-not-allowed');
+                    }
                 });
         }
 
@@ -244,7 +302,7 @@
         }
 
         function fetchCoaList() {
-            fetch(`${apiBaseUrl}/api/coa`, {
+            fetch(`${apiBaseUrl}/api/coa/level-2-3`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -263,8 +321,16 @@
             renderPeriodeDropdown();
             fetchCoaList();
             renderDetailTable();
-            document.getElementById('addDetailBtn').onclick = addDetailRow;
-            document.getElementById('resetDetailBtn').onclick = resetDetailRows;
+            document.getElementById('addDetailBtn').onclick = function() {
+                handleLoading(this, () => {
+                    addDetailRow();
+                });
+            };
+            document.getElementById('resetDetailBtn').onclick = function() {
+                handleLoading(this, () => {
+                    resetDetailRows();
+                });
+            };
             document.getElementById('detailTableBody').addEventListener('change', function(e) {
                 const idx = e.target.getAttribute('data-idx');
                 if (e.target.classList.contains('detail-akun')) {
@@ -323,35 +389,33 @@
                     });
                     return;
                 }
-                // Kirim data
-                const req = {
-                    tanggal,
-                    keterangan,
-                    tipe,
-                    periode_id: Number(periode_id),
-                    details: detailRows.map(r => ({
-                        akun_id: Number(r.akun_id),
-                        debit: Number(r.debet) || 0,
-                        kredit: Number(r.kredit) || 0
-                    }))
-                };
-                fetch(`${apiBaseUrl}/api/jurnal`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(req)
-                    })
-                    .then(res => res.json().then(data => ({
-                        ok: res.ok,
-                        data
-                    })))
-                    .then(({
-                        ok,
-                        data
-                    }) => {
-                        if (ok) {
+
+                // Kirim data dengan loading state
+                handleLoading(this, async () => {
+                    const req = {
+                        tanggal,
+                        keterangan,
+                        tipe,
+                        periode_id: Number(periode_id),
+                        details: detailRows.map(r => ({
+                            akun_id: Number(r.akun_id),
+                            debit: Number(r.debet) || 0,
+                            kredit: Number(r.kredit) || 0
+                        }))
+                    };
+
+                    try {
+                        const response = await fetch(`${apiBaseUrl}/api/jurnal`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(req)
+                        });
+                        const data = await response.json();
+
+                        if (response.ok) {
                             showJurnalResponseCard(data);
                             document.getElementById('formJurnalUmum').reset();
                             resetDetailRows();
@@ -362,14 +426,14 @@
                                 text: data.message || 'Gagal menyimpan jurnal.'
                             });
                         }
-                    })
-                    .catch(() => {
+                    } catch (error) {
                         Swal.fire({
                             icon: 'error',
                             title: 'Gagal',
                             text: 'Terjadi kesalahan.'
                         });
-                    });
+                    }
+                });
             };
         });
 

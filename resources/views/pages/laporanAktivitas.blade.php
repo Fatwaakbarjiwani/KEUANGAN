@@ -36,10 +36,26 @@
                     </div>
                     <div class="flex items-end gap-2">
                         <button type="button" @click="fetchLaporanAktivitas"
-                            class="w-full text-white bg-blue-600 hover:bg-blue-700 font-medium py-2 px-4 rounded-lg transition">Tampilkan</button>
+                            class="w-full text-white bg-blue-600 hover:bg-blue-700 font-medium py-2 px-4 rounded-lg transition relative">
+                            <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            <span class="btn-text">Tampilkan</span>
+                        </button>
                         <button type="button" @click="downloadPDF"
-                            class="w-full text-white bg-green-600 hover:bg-green-700 font-medium py-2 px-4 rounded-lg transition"
-                            x-show="dataLoaded">Download PDF</button>
+                            class="w-full text-white bg-green-600 hover:bg-green-700 font-medium py-2 px-4 rounded-lg transition relative"
+                            x-show="dataLoaded">
+                            <svg class="spinner hidden animate-spin h-4 w-4 text-white absolute left-4"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            <span class="btn-text">Download PDF</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -109,7 +125,8 @@
                                 <template x-for="row in flattenAktivitas(aktivitasData.beban)" :key="row.id">
                                     <tr>
                                         <td class="px-6 py-4 text-sm text-slate-600">
-                                            <span :style="`padding-left: ${row.indent}px`" x-text="row.account_name"></span>
+                                            <span :style="`padding-left: ${row.indent}px`"
+                                                x-text="row.account_name"></span>
                                         </td>
                                         <td class="px-6 py-4 text-right text-sm font-medium text-rose-600"
                                             x-text="formatRupiah(row.saldo_awal)"></td>
@@ -145,9 +162,26 @@
                     total_beban: 0,
                     laba_bersih: 0
                 },
-
-
                 dataLoaded: false,
+
+                // Fungsi untuk menangani loading state
+                handleLoading(btn, action) {
+                    const spinner = btn.querySelector('.spinner');
+                    const btnText = btn.querySelector('.btn-text');
+                    const originalText = btnText.textContent;
+
+                    spinner.classList.remove('hidden');
+                    btnText.textContent = 'Loading...';
+                    btn.disabled = true;
+
+                    return Promise.resolve(action())
+                        .finally(() => {
+                            spinner.classList.add('hidden');
+                            btnText.textContent = originalText;
+                            btn.disabled = false;
+                        });
+                },
+
                 init() {
                     this.fetchPeriodeList();
                 },
@@ -174,17 +208,20 @@
                 },
                 fetchLaporanAktivitas() {
                     if (!this.form.periode_id || !this.form.level) return;
-                    fetch(`${window.apiBaseUrl}/api/laporan/aktivitas?periode_id=${this.form.periode_id}&level=${this.form.level}`, {
-                            headers: {
-                                Authorization: 'Bearer ' + token,
-                                'Accept': 'application/json',
-                            }
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            this.aktivitasData = data;
-                            this.dataLoaded = true;
-                        });
+
+                    const btn = event.target.closest('button');
+                    this.handleLoading(btn, async () => {
+                        const response = await fetch(
+                            `${window.apiBaseUrl}/api/laporan/aktivitas?periode_id=${this.form.periode_id}&level=${this.form.level}`, {
+                                headers: {
+                                    Authorization: 'Bearer ' + token,
+                                    'Accept': 'application/json',
+                                }
+                            });
+                        const data = await response.json();
+                        this.aktivitasData = data;
+                        this.dataLoaded = true;
+                    });
                 },
                 flattenAktivitas(data, level = 1) {
                     let rows = [];
@@ -208,69 +245,124 @@
                         alert('Tidak ada data untuk diunduh!');
                         return;
                     }
-                    const {
-                        jsPDF
-                    } = window.jspdf;
-                    const doc = new jsPDF();
-                    let y = 10;
-                    doc.setFontSize(16);
-                    doc.text('Laporan Aktivitas', 105, y, {
-                        align: 'center'
-                    });
-                    y += 10;
-                    doc.setFontSize(11);
-                    doc.text(`Periode ID: ${this.form.periode_id} | Level: ${this.form.level}`, 14, y);
-                    y += 7;
-                    doc.text(`Total Pendapatan: ${this.formatRupiah(this.aktivitasData.total_pendapatan)}`, 14, y);
-                    y += 7;
-                    doc.text(`Total Beban: ${this.formatRupiah(this.aktivitasData.total_beban)}`, 14, y);
-                    y += 7;
-                    doc.text(`Laba Bersih: ${this.formatRupiah(this.aktivitasData.laba_bersih)}`, 14, y);
-                    y += 7;
-                    // Table header
-                    const headers = [
-                        ['Nama Akun', 'Periode Pertama', 'Periode Kedua']
-                    ];
-                    const body = [];
-                    // Pendapatan
-                    if (this.aktivitasData.pendapatan && this.aktivitasData.pendapatan.length > 0) {
-                        this.flattenAktivitas(this.aktivitasData.pendapatan).forEach(row => {
-                            body.push([
-                                row.account_name,
-                                this.formatRupiah(row.saldo_awal),
-                                this.formatRupiah(row.saldo_akhir)
-                            ]);
+
+                    const btn = event.target.closest('button');
+                    this.handleLoading(btn, () => {
+                        const {
+                            jsPDF
+                        } = window.jspdf;
+                        const doc = new jsPDF();
+                        let y = 10;
+                        doc.setFontSize(16);
+                        doc.text('Laporan Aktivitas', 105, y, {
+                            align: 'center'
                         });
-                    }
-                    // Beban
-                    if (this.aktivitasData.beban && this.aktivitasData.beban.length > 0) {
-                        this.flattenAktivitas(this.aktivitasData.beban).forEach(row => {
-                            body.push([
-                                row.account_name,
-                                this.formatRupiah(row.saldo_awal),
-                                this.formatRupiah(row.saldo_akhir)
-                            ]);
+                        y += 10;
+                        doc.setFontSize(11);
+                        // Cari data periode yang dipilih
+                        const periode = this.periodeList.find(p => p.id == this.form.periode_id);
+                        let periodeLabel = '-';
+                        if (periode) {
+                            // Tampilkan nama + range tanggal, atau tahun jika ada
+                            periodeLabel = `${periode.nama}`;
+                        }
+                        doc.text(`Periode: ${periodeLabel} | Level: ${this.form.level}`, 14, y);
+                        y += 7;
+                        doc.text(`Total Pendapatan: ${this.formatRupiah(this.aktivitasData.total_pendapatan)}`, 14,
+                            y);
+                        y += 7;
+                        doc.text(`Total Beban: ${this.formatRupiah(this.aktivitasData.total_beban)}`, 14, y);
+                        y += 7;
+                        doc.text(`Laba Bersih: ${this.formatRupiah(this.aktivitasData.laba_bersih)}`, 14, y);
+                        y += 7;
+                        // Table header
+                        const headers = [
+                            ['Nama Akun', 'Periode Pertama', 'Periode Kedua']
+                        ];
+                        const body = [];
+                        // Tambahkan label PENDAPATAN
+                        body.push([{
+                            content: 'PENDAPATAN',
+                            colSpan: 3,
+                            styles: {
+                                fontStyle: 'bold',
+                                halign: 'left',
+                                fillColor: [240, 240, 255]
+                            }
+                        }]);
+                        // Pendapatan
+                        if (this.aktivitasData.pendapatan && this.aktivitasData.pendapatan.length > 0) {
+                            this.flattenAktivitas(this.aktivitasData.pendapatan).forEach(row => {
+                                body.push([{
+                                        content: ' '.repeat(row.indent / 6) + row.account_name,
+                                        styles: {
+                                            cellPadding: {
+                                                left: row.indent
+                                            }
+                                        }
+                                    },
+                                    this.formatRupiah(row.saldo_awal),
+                                    this.formatRupiah(row.saldo_akhir)
+                                ]);
+                            });
+                        }
+                        // Tambahkan label BEBAN
+                        body.push([{
+                            content: 'BEBAN',
+                            colSpan: 3,
+                            styles: {
+                                fontStyle: 'bold',
+                                halign: 'left',
+                                fillColor: [255, 240, 240]
+                            }
+                        }]);
+                        // Beban
+                        if (this.aktivitasData.beban && this.aktivitasData.beban.length > 0) {
+                            this.flattenAktivitas(this.aktivitasData.beban).forEach(row => {
+                                body.push([{
+                                        content: ' '.repeat(row.indent / 6) + row.account_name,
+                                        styles: {
+                                            cellPadding: {
+                                                left: row.indent
+                                            }
+                                        }
+                                    },
+                                    this.formatRupiah(row.saldo_awal),
+                                    this.formatRupiah(row.saldo_akhir)
+                                ]);
+                            });
+                        }
+                        doc.autoTable({
+                            head: headers,
+                            body: body,
+                            startY: y,
+                            theme: 'grid',
+                            headStyles: {
+                                fillColor: [59, 130, 246]
+                            },
+                            styles: {
+                                fontSize: 10,
+                                cellPadding: 3
+                            },
+                            didParseCell: function(data) {
+                                // Untuk label PENDAPATAN/BEBAN, bold dan warna
+                                if (data.row.raw && data.row.raw[0] && data.row.raw[0].colSpan === 3) {
+                                    data.cell.styles.fontStyle = 'bold';
+                                    data.cell.styles.fillColor = data.row.raw[0].content ===
+                                        'PENDAPATAN' ? [240,
+                                            240, 255
+                                        ] : [255, 240, 240];
+                                }
+                            }
                         });
-                    }
-                    doc.autoTable({
-                        head: headers,
-                        body: body,
-                        startY: y,
-                        theme: 'grid',
-                        headStyles: {
-                            fillColor: [59, 130, 246]
-                        },
-                        styles: {
-                            fontSize: 10
-                        },
+                        y = doc.lastAutoTable.finalY + 5;
+                        doc.setFontSize(11);
+                        doc.text('Laba Bersih', 14, y);
+                        doc.text(this.formatRupiah(this.aktivitasData.laba_bersih), 80, y, {
+                            align: 'right'
+                        });
+                        doc.save('laporan-aktivitas.pdf');
                     });
-                    y = doc.lastAutoTable.finalY + 5;
-                    doc.setFontSize(11);
-                    doc.text('Laba Bersih', 14, y);
-                    doc.text(this.formatRupiah(this.aktivitasData.laba_bersih), 80, y, {
-                        align: 'right'
-                    });
-                    doc.save('laporan-aktivitas.pdf');
                 }
             }
         }
